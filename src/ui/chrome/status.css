@@ -42,28 +42,14 @@
 .gm-st-bar:indeterminate { background: linear-gradient(90deg, rgba(230, 196, 119, 0.15) 0%, var(--gm-amber) 50%, rgba(230, 196, 119, 0.15) 100%) 0 0 / 40% 100% no-repeat, rgba(230, 196, 119, 0.2); animation: gm-slide 1.4s ease-in-out infinite; }
 @keyframes gm-slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 
-/* nothing on screen yet: the status is the whole page */
-.gm-status.is-center {
-  top: 50%;
-  bottom: auto;
-  transform: translate(-50%, -50%);
-  width: min(26rem, calc(100vw - 32px));
-  padding: 1.2rem 1.3rem 1.3rem;
-  border-radius: 20px;
-  background: rgba(14, 9, 4, 0.8);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-  text-align: center;
-}
-.gm-status.is-center .gm-st-title { font-family: var(--gm-display); font-weight: 380; font-size: 1.35rem; }
-.gm-status.is-center .gm-st-actions { justify-content: center; }
 @media (prefers-reduced-motion: reduce) {
   .gm-st-bar:indeterminate { animation: none; background: var(--gm-amber); opacity: 0.6; }
 }
 
 /* on a narrow window the status box would run under the music player (bottom right): lift it above the player */
 @media (max-width: 960px) {
-  .gm-status:not(.is-center) { bottom: calc(7.4rem + 3.4rem + env(safe-area-inset-bottom)); }
+  .gm-status { bottom: calc(7.4rem + 3.4rem + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 640px) {
-  .gm-status:not(.is-center) { bottom: calc(6.9rem + 3.4rem + env(safe-area-inset-bottom)); }
+  .gm-status { bottom: calc(6.9rem + 3.4rem + env(safe-area-inset-bottom)); }
 }
