@@ -83,12 +83,12 @@ The build injects it as a `<meta>` tag (so hosts that cannot set headers enforce
 
 ## Deploying
 
-The host is **Cloudflare Pages**, at https://phloem.stemdeck.app and https://phloem.thales.sh; the exact steps (create the project, environment variables, domains, music origins) are in **`docs/DEPLOY.md`**.
+The host is **Cloudflare Pages**, at https://phloem.thales.sh (phloem.stemdeck.app redirects to it); the exact steps (create the project, environment variables, domains, music origins) are in **`docs/DEPLOY.md`**.
 The build is relative-path (`base: './'`), so the same `dist/` also works on a root domain or under a sub-path.
 
 | Variable | Effect |
 |---|---|
-| `SITE_URL` | Canonical origin+path for `og:url`, `og:image`, `canonical` (crawlers need absolute URLs). Default `https://phloem.stemdeck.app/`; set it to the empty string to omit `canonical` / `og:url` (relative `og:image`). |
+| `SITE_URL` | Canonical origin+path for `og:url`, `og:image`, `canonical` (crawlers need absolute URLs). Default `https://phloem.thales.sh/`; set it to the empty string to omit `canonical` / `og:url` (relative `og:image`). |
 | `VITE_SOURCE_URL` | Target of the "Source code (AGPL-3.0)" links (landing footer, viewer tools row). AGPL-3.0 section 13 requires a hosted, modified version to offer its users the corresponding source. Default `https://github.com/thcp/phloem`; a fork that hosts a modified version sets its own. |
 | `PHLOEM_BASE` | Optional absolute public path (default `./`). |
 | `VITE_EXPOSE_TEST_HOOKS=1` / `--mode e2e` | Builds the `window.__phloem` test hook in (see below). Never set it for a production deployment. |

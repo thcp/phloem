@@ -6,7 +6,7 @@ import { defineConfig, type Plugin } from 'vite';
  * Deployment knobs (all optional environment variables, read at build time):
  *   PHLOEM_BASE   public path. Default './' (relative URLs: works on a root domain and under a sub-path alike).
  *                 Set an absolute path (e.g. '/phloem/') only if you need absolute asset URLs.
- *   SITE_URL      canonical origin + path of the deployed site. Default https://phloem.stemdeck.app/ . Used for og:url / og:image,
+ *   SITE_URL      canonical origin + path of the deployed site. Default https://phloem.thales.sh/ . Used for og:url / og:image,
  *                 which social crawlers require to be absolute. Set it to the empty string to omit canonical / og:url and use
  *                 relative og:image (e.g. a preview deployment on another origin).
  *   VITE_SOURCE_URL  where the corresponding source code is offered (AGPL-3.0 section 13); target of the "Source code (AGPL-3.0)" links.
@@ -14,7 +14,7 @@ import { defineConfig, type Plugin } from 'vite';
  *   VITE_EXPOSE_TEST_HOOKS=1 or `--mode e2e`  expose the window.__phloem test hook (src/main.ts). Never in a normal production build.
  * See docs/WEB.md and docs/DEPLOY.md.
  */
-export const DEFAULT_SITE_URL = 'https://phloem.stemdeck.app/';
+export const DEFAULT_SITE_URL = 'https://phloem.thales.sh/';
 const siteUrl = (process.env.SITE_URL ?? DEFAULT_SITE_URL).replace(/\/?$/, '/').replace(/^\/$/, '');
 
 // The CSP is in a <meta> tag so it also applies on hosts that cannot set headers. public/_headers carries the same

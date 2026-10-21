@@ -52,7 +52,7 @@ npm run preview      # serve dist/
 
 Two things to know when you run it locally:
 
-- **No music on localhost.** The tracks are protected on purpose: only phloem.thales.sh and phloem.stemdeck.app may load them, so the player will say "Music unavailable" on your machine.
+- **No music on localhost.** The tracks are protected on purpose: only phloem.thales.sh may load them, so the player will say "Music unavailable" on your machine.
 - **`?demo`** opens the bundled StemDeck history with no network at all. It only works in development and tests.
 
 ## URL parameters

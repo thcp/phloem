@@ -1,7 +1,7 @@
 # Deploying Phloem on Cloudflare
 
 Phloem is a static site (`npm run build` writes `dist/`). It is hosted on **Cloudflare** (Workers static assets), from the public repository
-**https://github.com/thcp/phloem**. Served at **https://phloem.thales.sh** (live); also **https://phloem.stemdeck.app** (the primary address, `SITE_URL`).
+**https://github.com/thcp/phloem**. Served at **https://phloem.thales.sh** (the only deployment). **https://phloem.stemdeck.app** is a permanent redirect to it.
 
 ## 1. Deploy (Workers static assets)
 
@@ -14,22 +14,22 @@ npx wrangler deploy
 ```
 
 `wrangler login` first (or set `CLOUDFLARE_API_TOKEN`). Do **not** set `VITE_EXPOSE_TEST_HOOKS` for a production build.
-`SITE_URL` (canonical, `og:url`, `og:image`) and `VITE_SOURCE_URL` default to https://phloem.stemdeck.app/ and https://github.com/thcp/phloem; set them at build time to override.
+`SITE_URL` (canonical, `og:url`, `og:image`) and `VITE_SOURCE_URL` default to https://phloem.thales.sh/ and https://github.com/thcp/phloem; set them at build time to override.
 A stale `.wrangler/deploy/config.json` (git-ignored) can redirect `wrangler deploy` to `dist/wrangler.json` and ignore `wrangler.jsonc`: delete both if the routes do not apply.
 
 ## 2. Domains
 
 * `phloem.thales.sh`: live, attached as a custom domain by `wrangler.jsonc` (DNS record and certificate are created automatically because thales.sh is on the same Cloudflare account).
-* `phloem.stemdeck.app`: live, same mechanism. Its old Vercel CNAME was deleted first (Cloudflare refuses to attach a custom domain while a DNS record exists for the name).
+* `phloem.stemdeck.app`: not served by the Worker. In the stemdeck.app zone it has a proxied placeholder record (`AAAA phloem 100::`, needed so Cloudflare applies rules to the name) and a Single Redirect rule
+  (Rules > Redirect Rules) "phloem.stemdeck.app -> phloem.thales.sh": 301 to `https://phloem.thales.sh` + the same path, query string preserved.
 
-`canonical` and the share previews point at `SITE_URL` (stemdeck.app) on every domain: one primary address, the others are aliases.
-To make thales.sh the primary instead, set `SITE_URL` to `https://phloem.thales.sh/` and change `DEFAULT_SITE_URL` in `vite.config.ts` (a test checks it).
+`canonical` and the share previews point at `SITE_URL` (https://phloem.thales.sh/).
 
 ## 3. Music
 
 The tracks load from `https://audio.stemdeck.app` (the EU-jurisdiction R2 bucket `phloem`, custom domain `audio.stemdeck.app`). Two things restrict who may load them, and both list **both** sites:
 
-* R2 CORS on the bucket: allowed origins `https://phloem.stemdeck.app` and `https://phloem.thales.sh` (GET, HEAD, `range`).
+* R2 CORS on the bucket: allowed origins `https://phloem.thales.sh` and the old `https://phloem.stemdeck.app` (GET, HEAD, `range`; the old one can be dropped, nothing serves from it any more).
 * A zone firewall rule on stemdeck.app, "audio: only the Phloem site may load the music": blocks `audio.stemdeck.app` unless the Referer starts with one of those two origins.
 
 Check: `curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/" -H "Range: bytes=0-99" https://audio.stemdeck.app/audio/heartbeat-drip.mp3` gives 206; a foreign Referer gives 403.
@@ -42,8 +42,8 @@ To add another site, add it to both.
 * Headers and caching:
 
   ```
-  curl -sI https://phloem.stemdeck.app/ | grep -i -E 'content-security-policy|x-content-type|cache-control'
-  curl -sI https://phloem.stemdeck.app/featured/index.json | grep -i cache-control
+  curl -sI https://phloem.thales.sh/ | grep -i -E 'content-security-policy|x-content-type|cache-control'
+  curl -sI https://phloem.thales.sh/featured/index.json | grep -i cache-control
   ```
 
   Expect the CSP, `nosniff`, `max-age=0, must-revalidate` on `/`, `max-age=3600` on `/featured/*`, and `max-age=31536000, immutable` on `/assets/*`.

@@ -5,7 +5,6 @@
   "observability": { "enabled": true },
   "assets": { "directory": "./dist" },
   "routes": [
-    { "pattern": "phloem.thales.sh", "custom_domain": true },
-    { "pattern": "phloem.stemdeck.app", "custom_domain": true }
+    { "pattern": "phloem.thales.sh", "custom_domain": true }
   ]
 }
