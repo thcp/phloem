@@ -7,7 +7,7 @@ Generate the logs first (see docs/INGESTION.md):
   git -C <clone> log --first-parent --reverse -M --raw --numstat --format='@@%H%x09%aI%x09%an%x09%ae%x09%s' > stemdeck.log
   npm run synth-log -- synth.log 1500 300 3
 Scenarios: landing card (desktop + phone), upload of a real git log (compared with the bundled fixture), backward seek,
-pacing toggle, synthetic upload, mocked GitHub (rate limit + resume, 404, cancel), and (unless --no-network) one tiny real repo.
+synthetic upload, mocked GitHub (rate limit + resume, 404, cancel), and (unless --no-network) one tiny real repo.
 """
 import json
 import sys
@@ -130,17 +130,6 @@ def main():
             wait_for(page, "() => { const h = window.__phloem.header; return h[1] === 120 && h[14] === 0; }", 180)
             page.wait_for_timeout(3000)
             page.screenshot(path=f"{OUT}/04-upload-stemdeck-commit120.png")
-            # pacing toggle
-            # the pacing control is a <select class="pacing"> in the legacy bar and a toggle button (.gm-pacing) in the redesigned chrome
-            if page.locator(".gm-pacing").count():
-                page.click(".gm-pacing")
-            else:
-                page.select_option(".pacing", "dates")
-            page.wait_for_timeout(5000)  # software GL: frames are slow; do not trust a header from before the change
-            wait_for(page, "() => { const h = window.__phloem.header; return h[1] === 120 && h[14] === 0; }", 180)
-            check(True, "pacing 'by date' rebuilds the sim and returns to the same commit")
-            page.wait_for_timeout(1500)
-            page.screenshot(path=f"{OUT}/05-pacing-by-date.png")
             check(not [l for l in logs if l[0] in ("error", "pageerror")], "no console errors during the upload run")
             if logs:
                 print("console:", logs[:5])

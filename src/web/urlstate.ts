@@ -13,7 +13,7 @@
  *   &mode=auto|commits|snapshots   GitHub detail mode (see docs/INGESTION.md)
  *   ?demo                   the bundled StemDeck history (no network)
  *
- * Unknown parameters (`stats`, `seed`, `pacing`, `fixture`, ...) are preserved when the URL is rewritten.
+ * Unknown parameters (`stats`, `seed`, `fixture`, ...) are preserved when the URL is rewritten.
  */
 import { parseRepoInput, type RepoRef } from '../ingest/github';
 
