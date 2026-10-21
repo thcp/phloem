@@ -3,6 +3,7 @@ import { BURST_STRIDE, FOOD_STRIDE, H, HEADER, PULSE_STRIDE, SEG_R_MAX, SEG_STRI
 import { BURSTS, FLOOD_SPEED, floodDuration } from '../sim/activity';
 import type { Camera } from './camera';
 import { type Effects, type QualityTier, tierEffects } from './quality';
+import { CROWD_OFF, type Crowd, crowdLevels } from './crowd';
 import { LENS_OFF, type LensParams, lensParams } from './lens';
 import {
   DOWN_FS, FOOD_VS, FULL_VS, MOTE_FS, MOTE_VS, PULSE_FS, PULSE_VS, UP_FS, finalFs, foodFs, segFs, segVs,
@@ -48,10 +49,10 @@ const smoothstep = (a: number, b: number, x: number): number => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
-const SEG_UNIFORMS = ['uView', 'uProj', 'uPxScale', 'uTime', 'uWobble', 'uFog', 'uRMax', 'uDistMax', 'uReach', 'uMotion', 'uBurst'];
+const SEG_UNIFORMS = ['uView', 'uProj', 'uPxScale', 'uTime', 'uWobble', 'uFog', 'uRMax', 'uDistMax', 'uReach', 'uMotion', 'uBurst', 'uThreadLod', 'uRadiusLod', 'uFoodLod'];
 /** Bloom swell at the peak of a beat: +30%. */
 const PULSE_BLOOM = 0.3;
-const FINAL_UNIFORMS = ['uHdr', 'uBloom', 'uBloomStrength', 'uTime', 'uAspect', 'uLensA', 'uLensB'];
+const FINAL_UNIFORMS = ['uHdr', 'uBloom', 'uBloomStrength', 'uExposure', 'uTime', 'uAspect', 'uLensA', 'uLensB'];
 const MOTE_UNIFORMS = [...SEG_UNIFORMS, 'uBoxC', 'uBoxR', 'uHot', 'uHotR'];
 
 export class Renderer {
@@ -100,6 +101,7 @@ export class Renderer {
   private hot = new Float32Array(5); // smoothed x y z strength radius
   private box = new Float32Array(6); // smoothed center xyz, half extents xyz
   private lastRenderTime = -1;
+  private frameDt = 0;
   private frameTime = -1; // render time at which the current frame's tick was current
   private foodCount = 0;
   private pulseCount = 0;
@@ -118,6 +120,11 @@ export class Renderer {
    */
   fringe = true;
   wobble = 0.55;
+  /** Crowded-view detail factors (crowd.ts), eased toward their targets every frame. */
+  private crowd: Crowd = { ...CROWD_OFF };
+  private crowdGoal: Crowd = { ...CROWD_OFF };
+  /** Turn the level-of-detail for crowded views off (tests, comparisons). */
+  crowdLod = true;
   readonly floatTargets: boolean;
   /** GPU time of the last measured frame in ms (EXT_disjoint_timer_query_webgl2), -1 if unavailable. */
   gpuMs = -1;
@@ -403,6 +410,7 @@ export class Renderer {
     if (this.frameTime < 0) this.frameTime = time;
     const dt = this.lastRenderTime >= 0 ? Math.min(0.1, Math.max(0, time - this.lastRenderTime)) : 0;
     this.lastRenderTime = time;
+    this.frameDt = dt;
     const speed = hc[H.playing] > 0 ? hc[H.speed] : 0;
     const extra = Math.min(Math.max(0, time - this.frameTime) * 60 * speed, 3 * speed);
     const tick = hc[H.tick] + extra;
@@ -438,6 +446,22 @@ export class Renderer {
     b[5] += ((hc[H.maxZ] - hc[H.minZ]) / 2 - b[5]) * kf;
   }
 
+  /** Ease the crowded-view factors toward what this frame's content and zoom ask for (about 0.4 s), so detail never pops. */
+  private updateCrowd(cam: Camera): void {
+    const hc = this.hdrCopy;
+    const goal = this.crowdGoal;
+    if (this.crowdLod) {
+      crowdLevels(hc[H.segs], hc[H.liveFiles], hc[H.maxX] - hc[H.minX], hc[H.maxY] - hc[H.minY], cam.zoom, this.width, this.height, goal);
+    } else Object.assign(goal, CROWD_OFF);
+    const c = this.crowd;
+    const k = this.frameDt > 0 ? 1 - Math.exp(-this.frameDt / 0.4) : 1;
+    c.thread += (goal.thread - c.thread) * k;
+    c.radius += (goal.radius - c.radius) * k;
+    c.food += (goal.food - c.food) * k;
+    c.exposure += (goal.exposure - c.exposure) * k;
+    c.bloom += (goal.bloom - c.bloom) * k;
+  }
+
   private setView(prog: Prog, cam: Camera, time: number): void {
     const gl = this.gl;
     gl.useProgram(prog.p);
@@ -451,6 +475,9 @@ export class Renderer {
     gl.uniform1f(prog.u.uDistMax, this.hdrCopy[H.distMax] || 256);
     gl.uniform1f(prog.u.uReach, this.hdrCopy[H.reach]);
     gl.uniform1f(prog.u.uMotion, this.reduced ? 0 : 1);
+    gl.uniform1f(prog.u.uThreadLod, this.crowd.thread);
+    gl.uniform1f(prog.u.uRadiusLod, this.crowd.radius);
+    gl.uniform1f(prog.u.uFoodLod, this.crowd.food);
     gl.uniform4fv(prog.u.uBurst, this.burstU);
   }
 
@@ -484,6 +511,7 @@ export class Renderer {
     if (!hdr) return;
     const timing = this.beginTimer();
     this.updateActivity(time);
+    this.updateCrowd(cam);
     const lens = this.lensState;
 
     // 1. scene
@@ -571,7 +599,8 @@ export class Renderer {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.bloom.length ? this.bloom[0].tex : hdr.tex);
     gl.uniform1i(fp.u.uBloom, 1);
-    gl.uniform1f(fp.u.uBloomStrength, this.bloomStrength * (1 + PULSE_BLOOM * this.pulse));
+    gl.uniform1f(fp.u.uBloomStrength, this.bloomStrength * this.crowd.bloom * (1 + PULSE_BLOOM * this.pulse));
+    gl.uniform1f(fp.u.uExposure, this.crowd.exposure);
     gl.uniform1f(fp.u.uTime, time);
     const m = Math.max(this.width, this.height);
     gl.uniform2f(fp.u.uAspect, this.width / m, this.height / m);

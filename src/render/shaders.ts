@@ -167,6 +167,8 @@ layout(location = 4) in float aDist; // unorm16 growth distance of endpoint 0 (x
 uniform float uRMax;
 uniform float uDistMax;
 uniform float uMotion; // 1, or 0 under prefers-reduced-motion
+uniform float uRadiusLod; // tube thickness factor (1 = as is; lower when the view is crowded)
+uniform float uThreadLod; // opacity of the finest threads (1 = all drawn; lower when the view is crowded, see crowd.ts)
 ${VIEW}
 ${WOBBLE}
 ${BILLBOARD}
@@ -210,10 +212,15 @@ void main() {
   vHWG = vec3(heatN / 15.0, (e8 - heatN * 16.0) / 15.0, aAE.x < ${(GHOST_ALPHA + 0.008).toFixed(3)} ? 1.0 : 0.0);
   float r0 = aR.x * uRMax;
   float r1 = aR.y * uRMax;
+  // crowded view: the finest threads (explorer hair) fade first, the trunks keep the structure
+  float lod = mix(1.0, uThreadLod, 1.0 - smoothstep(0.3, 0.9, max(r0, r1)));
+  r0 *= uRadiusLod;
+  r1 *= uRadiusLod;
 #if OPAQUE && !LEGACY
   // fading tubes and ghosts never have solid pixels: skip their quads in the opaque pass
-  if (aAE.x < 0.99) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  if (aAE.x < 0.99 || lod < 0.99) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
 #endif
+  if (lod < 0.01) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   float d0 = aDist * uDistMax;
   float len3w = length(aP1 - aP0);
   float d1 = d0 + len3w;
@@ -281,7 +288,7 @@ void main() {
   vec3 d3 = v1 - v0;
   float len3 = length(d3);
   vAxis = vec4(len3 > 1e-5 ? d3 / len3 : u, len3 / max(L, 0.08 * len3 + 1e-5));
-  vAlpha = aAE.x;
+  vAlpha = aAE.x * lod;
   vPx = px;
   vSeg = vec2(d0, len3w);
   // per-endpoint values, extended linearly over the quad so they interpolate exactly along the axis
@@ -466,6 +473,7 @@ export const FOOD_VS = /* glsl */ `#version 300 es
 precision highp float;
 layout(location = 0) in vec4 aA; // x y z radius
 layout(location = 1) in vec4 aB; // nutrient engulf fade seedKind
+uniform float uFoodLod; // size of file dots (1 = full; 0 when files are only a few pixels apart, see crowd.ts)
 ${VIEW}
 ${WOBBLE}
 out vec2 vLocal;
@@ -482,6 +490,10 @@ void main() {
   float px = uPxScale * max(-c.z, 1e-3);
   float kind = floor(aB.w * 0.5);
   float rad = max(aA.w, 1.1 * px) * (0.4 + 0.6 * aB.z);
+  if (kind < 0.5) {
+    rad *= uFoodLod;
+    if (rad < 0.25 * px) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); vLocal = vec2(0.0); vRad = 0.0; vB = aB; vC = c; vPx = px; return; }
+  }
   float pad = rad * (kind > 0.5 ? 2.4 : 1.6) + 2.0 * px;
   vec2 corner = vec2(float(gl_VertexID & 1), float(gl_VertexID >> 1)) * 2.0 - 1.0;
   vLocal = corner * pad;
@@ -694,6 +706,7 @@ precision highp float;
 uniform sampler2D uHdr;
 uniform sampler2D uBloom;
 uniform float uBloomStrength;
+uniform float uExposure; // scene brightness before tone mapping (1, lower in crowded views)
 uniform float uTime;
 uniform vec2 uAspect;
 #if LENS > 0
@@ -766,7 +779,7 @@ void main() {
   // the lit field of the eyepiece: a faint warm illumination that gives the vignette something to fall off from
   bg = mix(bg, mix(vec3(0.092, 0.066, 0.036), vec3(0.022, 0.016, 0.009), smoothstep(0.0, 0.95, dn)), uLensA.x);
 #endif
-  vec3 col = hdr + bloom * uBloomStrength;
+  vec3 col = hdr * uExposure + bloom * uBloomStrength;
   col = vec3(1.0) - exp(-col * 1.25);          // soft filmic shoulder
   col = bg * (1.0 - col) + col;                 // mold over agar
   col *= 1.0 - 0.35 * smoothstep(0.45, 1.1, r); // vignette
