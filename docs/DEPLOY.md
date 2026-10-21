@@ -60,8 +60,7 @@ curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/"
 
   Expect the CSP, `nosniff`, `max-age=0, must-revalidate` on `/`, `max-age=3600` on `/featured/*`, and `max-age=31536000, immutable` on `/assets/*`.
 * Share preview: paste the URL into a social/Slack unfurl tester; the image is `/og.png` (1200x630).
-* Every push to `main` deploys through `.github/workflows/deploy.yml` (tests, build, `wrangler deploy`); it can also be run by hand from the Actions tab. It needs the repository secrets `CLOUDFLARE_API_TOKEN`
-  (a token limited to **Workers Scripts: Edit** on this account) and `CLOUDFLARE_ACCOUNT_ID`. Pull requests are only built and tested by `ci.yml`. `npm run deploy` from a laptop still works.
+* Every push to `main` deploys through `.github/workflows/deploy.yml` (tests, build, `wrangler deploy`); it can also be run by hand from the Actions tab. It uses the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The token is the account API token "phloem GitHub Actions deploy" with only: Workers Scripts Write and Account Settings Read (account), and Workers Routes Write and Zone Read (zone thales.sh only). It cannot edit DNS, firewall rules or R2. To rotate it: create a new token with those four permissions, update the secret (`gh secret set CLOUDFLARE_API_TOKEN`), delete the old one. Pull requests are only built and tested by `ci.yml`. `npm run deploy` from a laptop still works.
 
 ## Notes
 
