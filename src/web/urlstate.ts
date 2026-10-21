@@ -8,6 +8,7 @@
  *   &t=N                    start position: commit NUMBER N (1-based, as the counter shows it) within the loaded window
  *   &labels=all|active|off  name labels
  *   &quality=auto|high|medium|low
+ *   &view=circuit           flat circuit board view (default: 3D)
  *   &speed=X                playback speed multiplier (0.1 .. 32)
  *   &mode=auto|commits|snapshots   GitHub detail mode (see docs/INGESTION.md)
  *   ?demo                   the bundled StemDeck history (no network)
@@ -39,6 +40,7 @@ export interface ViewerParams {
   speed: number | null;
   mode: DetailMode | null;
   demo: boolean;
+  circuit: boolean;
 }
 
 export const SPEED_MIN = 0.1;
@@ -80,6 +82,7 @@ export function parseViewerParams(search: string): ViewerParams {
     speed: Number.isFinite(speed) && speed > 0 ? Math.min(SPEED_MAX, Math.max(SPEED_MIN, speed)) : null,
     mode: mode === 'auto' || mode === 'commits' || mode === 'snapshots' ? mode : null,
     demo: q.has('demo'),
+    circuit: q.get('view') === 'circuit',
   };
 }
 
@@ -113,7 +116,7 @@ function enc(s: string): string {
 }
 
 /** Parameters in the order a shared link should show them; anything else keeps its place after these. */
-const ORDER = ['repo', 'demo', 'branch', 'max', 'mode', 't', 'labels', 'quality', 'speed'];
+const ORDER = ['repo', 'demo', 'branch', 'max', 'mode', 't', 'labels', 'quality', 'speed', 'view'];
 
 /**
  * Apply a patch to a query string: `null`/`undefined`/`false` removes a key, `true` writes a bare flag (`demo`), anything else
@@ -159,6 +162,7 @@ export interface ViewerState {
   quality?: QualityParam | null;
   speed?: number;
   demo?: boolean;
+  circuit?: boolean;
 }
 
 export function stateToPatch(s: ViewerState): ParamPatch {
@@ -176,6 +180,7 @@ export function stateToPatch(s: ViewerState): ParamPatch {
   // retired parameters (`?orbit`, `?director`: the cinematic camera is always on now): drop them from old shared links when the URL is rewritten
   p.orbit = null;
   p.director = null;
+  if ('circuit' in s) p.view = s.circuit ? 'circuit' : null;
   if ('demo' in s) p.demo = s.demo ? true : null;
   return p;
 }

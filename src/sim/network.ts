@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Rng } from '../model/rng';
 import { SpatialHash } from './spatial';
-import { coneDir } from './vec';
+import { coneDir, snap8 } from './vec';
 import { GHOST_MIN_R, WARM_DECAY } from './activity';
 
 /**
@@ -36,6 +36,7 @@ export const GHOST_CAP = 2048;
 /** Per-tick decay of an edge's remembered peak radius. */
 const PEAK_DECAY = 0.9995;
 const WARM_DECAY_L = WARM_DECAY;
+const SQ = Math.SQRT1_2;
 
 export interface NetworkParams {
   segLen: number;
@@ -63,6 +64,11 @@ export interface NetworkParams {
   solveEveryOtherAbove: number;
   rMin: number; // world radius of the thinnest tube
   rScale: number; // radius = rMin + rScale * sqrt(D)
+  /**
+   * Circuit mode: growth tips follow octilinear routes (straight and 45 degree legs with sharp bends, no meander or
+   * corner smoothing), explorers keep to the 8 directions and turn by 45 degrees. Everything stays in the z = 0 plane.
+   */
+  circuit: boolean;
 }
 
 export const DEFAULT_NETWORK_PARAMS: NetworkParams = {
@@ -90,7 +96,11 @@ export const DEFAULT_NETWORK_PARAMS: NetworkParams = {
   solveEveryOtherAbove: 8000,
   rMin: 0.14,
   rScale: 1.6,
+  circuit: false,
 };
+
+/** Overrides for circuit mode: calmer fringe, so traces read as traces. */
+export const CIRCUIT_NETWORK: Partial<NetworkParams> = { explorerRate: 0.12, explorerBranchRate: 0.04, explorerLen: [8, 30] };
 
 export class Tip {
   active = false;
@@ -116,6 +126,10 @@ export class Tip {
   mx = 0;
   my = 0;
   mz = 0;
+  /** Circuit route: waypoints (x,y pairs, the last is the target), their count and the one being approached. */
+  way = new Float64Array(6);
+  nWay = 0;
+  iWay = 0;
   listed = false; // currently referenced from Network.tips
 }
 
@@ -584,6 +598,15 @@ export class Network {
     t.startDist = Math.max(1, d);
     t.maxTravel = t.startDist * 3 + 50;
     const inv = d > 1e-6 ? 1 / d : 0;
+    if (this.p.circuit) {
+      this.routeCircuit(t, fx, fy, tx, ty, rng);
+      t.startDist = Math.max(1, Math.abs(dx) + Math.abs(dy));
+      t.maxTravel = t.startDist * 2 + 60;
+      t.hz = 0;
+      t.mx = t.my = t.mz = 0;
+      this.growthTipCount++;
+      return t;
+    }
     // leave at an angle (up to 0.7 rad) so sibling veins fan out instead of overlapping
     const dir = this.dir;
     coneDir(inv ? dx * inv : 1, inv ? dy * inv : 0, inv ? dz * inv : 0, rng.next() * 0.7, rng.next() * Math.PI * 2, dir);
@@ -593,6 +616,61 @@ export class Network {
     t.mx = t.my = t.mz = 0;
     this.growthTipCount++;
     return t;
+  }
+
+  /**
+   * Octilinear route from (fx,fy) to (tx,ty): diagonal first, straight first, or straight-diagonal-straight (random).
+   * Every leg is along one of the 8 directions, so the bends are 45 or 90 degrees. Sets the tip's heading to the first leg.
+   */
+  private routeCircuit(t: Tip, fx: number, fy: number, tx: number, ty: number, rng: Rng): void {
+    const dx = tx - fx;
+    const dy = ty - fy;
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    const sx = dx < 0 ? -1 : 1;
+    const sy = dy < 0 ? -1 : 1;
+    const m = Math.min(ax, ay);
+    const s = Math.abs(ax - ay);
+    const w = t.way;
+    let n = 0;
+    if (m > 1e-3 && s > 1e-3) {
+      const style = rng.next();
+      const alongX = ax > ay;
+      if (style < 0.34) {
+        // diagonal, then straight
+        w[n++] = fx + sx * m;
+        w[n++] = fy + sy * m;
+      } else if (style < 0.67) {
+        // straight, then diagonal
+        w[n++] = alongX ? fx + sx * s : fx;
+        w[n++] = alongX ? fy : fy + sy * s;
+      } else {
+        // straight, diagonal, straight
+        const s1 = s * rng.range(0.25, 0.75);
+        const x1 = alongX ? fx + sx * s1 : fx;
+        const y1 = alongX ? fy : fy + sy * s1;
+        w[n++] = x1;
+        w[n++] = y1;
+        w[n++] = x1 + sx * m;
+        w[n++] = y1 + sy * m;
+      }
+    }
+    w[n++] = tx;
+    w[n++] = ty;
+    t.nWay = n >> 1;
+    t.iWay = 0;
+    this.aimCircuit(t, fx, fy);
+  }
+
+  /** Point the tip's heading at its current waypoint (exactly octilinear by construction). */
+  private aimCircuit(t: Tip, x: number, y: number): void {
+    const wx = t.way[t.iWay * 2] - x;
+    const wy = t.way[t.iWay * 2 + 1] - y;
+    const l = Math.hypot(wx, wy);
+    if (l < 1e-6) return;
+    t.hx = wx / l;
+    t.hy = wy / l;
+    t.hz = 0;
   }
 
   /** Fine exploratory branch along unit heading h: no food target, no flux, withers unless it gets used. */
@@ -612,6 +690,14 @@ export class Network {
     t.hx = hx;
     t.hy = hy;
     t.hz = hz;
+    if (this.p.circuit) {
+      this.dir[0] = hx;
+      this.dir[1] = hy;
+      snap8(this.dir);
+      t.hx = this.dir[0];
+      t.hy = this.dir[1];
+      t.hz = 0;
+    }
     t.mx = t.my = t.mz = 0;
     this.explorerCount++;
   }
@@ -838,7 +924,7 @@ export class Network {
     const fixed = t.node;
     this.nflags[fixed] &= ~N_TIP;
     this.index(fixed);
-    this.smoothCorner(fixed, 0.5);
+    if (!this.p.circuit) this.smoothCorner(fixed, 0.5);
     t.deposits++;
     let fused = false;
     if (t.fuseCooldown > 0) t.fuseCooldown--;
@@ -881,6 +967,22 @@ export class Network {
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         speed = p.tipSpeed;
         segLen = p.segLen;
+        if (p.circuit && t.iWay < t.nWay - 1 && t.travel <= t.maxTravel) {
+          // corner of the route: pin the node on it, fix it there (a sharp bend) and turn onto the next leg
+          const wx = t.way[t.iWay * 2];
+          const wy = t.way[t.iWay * 2 + 1];
+          if (Math.hypot(wx - x, wy - y) <= speed * 1.05) {
+            this.x[node] = wx;
+            this.y[node] = wy;
+            const pe0 = this.parentEdge[node];
+            this.updateEdgeLen(pe0);
+            this.dist[node] = this.dist[t.prev] + this.elen[pe0];
+            t.iWay++;
+            this.deposit(t, rng);
+            this.aimCircuit(t, wx, wy);
+            continue;
+          }
+        }
         if (dist <= speed * 1.05 || t.travel > t.maxTravel) {
           // arrive: snap onto the food / folder site
           this.x[node] = t.tx;
@@ -903,6 +1005,14 @@ export class Network {
           this.releaseTip(t);
           continue;
         }
+        if (p.circuit) {
+          // follow the route: head straight at the current waypoint (octilinear by construction), no meander
+          this.aimCircuit(t, x, y);
+          hx = t.hx;
+          hy = t.hy;
+          hz = 0;
+          if (rng.next() < p.explorerRate) this.spawnExplorerCone(t.prev, hx, hy, hz, 0.45, 1.35, 1, rng);
+        } else {
         const inv = 1 / dist;
         const prog = 1 - Math.min(1, dist / t.startDist);
         let steer = 0.05 + 0.35 * prog * prog;
@@ -959,6 +1069,7 @@ export class Network {
         t.hz = hz;
         // fan of fine exploratory branches behind the leading edge
         if (rng.next() < p.explorerRate) this.spawnExplorerCone(t.prev, hx, hy, hz, 0.45, 1.35, 1, rng);
+        }
       } else {
         speed = p.explorerSpeed;
         segLen = p.explorerSegLen;
@@ -969,14 +1080,20 @@ export class Network {
           continue;
         }
         const w = 0.16 * 0.577; // per-axis jitter, same rms turn as the 2D walk
-        t.mx = t.mx * 0.75 + rng.sym(w);
-        t.my = t.my * 0.75 + rng.sym(w);
-        t.mz = t.mz * 0.75 + rng.sym(w);
-        hx += t.mx;
-        hy += t.my;
-        hz += t.mz;
+        if (!p.circuit) {
+          t.mx = t.mx * 0.75 + rng.sym(w);
+          t.my = t.my * 0.75 + rng.sym(w);
+          t.mz = t.mz * 0.75 + rng.sym(w);
+          hx += t.mx;
+          hy += t.my;
+          hz += t.mz;
+        }
         const hl = Math.sqrt(hx * hx + hy * hy + hz * hz);
-        if (hl > 1e-3) {
+        if (p.circuit) {
+          hx = t.hx;
+          hy = t.hy;
+          hz = 0;
+        } else if (hl > 1e-3) {
           t.hx = hx /= hl;
           t.hy = hy /= hl;
           t.hz = hz /= hl;
@@ -998,7 +1115,15 @@ export class Network {
       const pe = this.parentEdge[node];
       this.updateEdgeLen(pe);
       this.dist[node] = this.dist[t.prev] + this.elen[pe];
-      if (this.elen[pe] >= segLen) this.deposit(t, rng);
+      if (this.elen[pe] >= segLen && this.deposit(t, rng) && p.circuit && t.explorer && rng.next() < 0.3) {
+        // explorers wander by turning 45 degrees at the nodes they fix
+        const s = rng.next() < 0.5 ? SQ : -SQ;
+        this.dir[0] = t.hx * SQ - t.hy * s;
+        this.dir[1] = t.hx * s + t.hy * SQ;
+        snap8(this.dir);
+        t.hx = this.dir[0];
+        t.hy = this.dir[1];
+      }
     }
     // compact the active tip list occasionally (no per-tick allocation)
     if (this.tips.length > 64 && this.freeTips.length > this.tips.length / 2) {

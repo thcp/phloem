@@ -390,6 +390,7 @@ export class WebApp implements AppApi {
     const patch = stateToPatch({
       labels: c.labels.mode as LabelModeParam,
       speed: c.chrome.speed,
+      circuit: c.chrome.circuit,
       // clamped: a stale frame of the previous history can briefly report a commit number past the new, shorter one
       ...(this.pendingT === null ? { commitNumber: Math.min(c.chrome.commitNumber, c.commits().length) } : {}),
     });

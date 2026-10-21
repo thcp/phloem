@@ -21,6 +21,7 @@ export interface ChromeHandlers {
   onResetCamera(): void;
   onCycleLabels(): void;
   onPacing(pacing: 'even' | 'dates'): void;
+  onCircuit(on: boolean): void;
   /** The "visualize another" button / Escape-less entry back to the landing card. */
   onOpenLanding(opener: HTMLElement): void;
   /** Called right before the link is copied: return the URL to share (the page refreshes its URL first). */
@@ -51,6 +52,7 @@ export class Chrome {
   private dateEl: HTMLElement;
   private speedSel: HTMLSelectElement;
   private pacingBtn: HTMLButtonElement;
+  private circuitBtn: HTMLButtonElement;
   private labelsBtn: HTMLButtonElement;
   private legendBtn: HTMLButtonElement;
   private legend: HTMLElement;
@@ -134,6 +136,7 @@ export class Chrome {
     <button type="button" class="gm-play" aria-label="Pause">${ICON.pause}</button>
     <div class="gm-readout"><span class="gm-n"></span><span class="gm-tot"></span><span class="gm-date"></span></div>
     <span class="gm-grow"></span>
+    <button type="button" class="gm-pill gm-circuit" aria-pressed="false" title="Circuit board view: flat, traces at 45 and 90 degrees. Press M to switch.">Circuit</button>
     <button type="button" class="gm-pill gm-pacing" aria-pressed="false" title="Space commits by their real dates (long idle gaps are compressed)">By date</button>
     <label class="gm-speedwrap"><span class="gm-sr">Speed</span><select class="gm-speed">${SPEEDS.map((s) => `<option value="${s}"${s === 1 ? ' selected' : ''}>${s}×</option>`).join('')}</select></label>
   </div>
@@ -150,6 +153,7 @@ export class Chrome {
     this.dateEl = q('.gm-date');
     this.speedSel = q('.gm-speed');
     this.pacingBtn = q('.gm-pacing');
+    this.circuitBtn = q('.gm-circuit');
     this.labelsBtn = q('.gm-names');
     this.legendBtn = q('.gm-legend-btn');
     this.legend = q('.gm-legend');
@@ -206,6 +210,7 @@ export class Chrome {
     });
     this.speedSel.addEventListener('change', () => h.onSpeed(Number(this.speedSel.value)));
     this.pacingBtn.addEventListener('click', () => h.onPacing(this.pacingBtn.getAttribute('aria-pressed') === 'true' ? 'even' : 'dates'));
+    this.circuitBtn.addEventListener('click', () => h.onCircuit(this.circuitBtn.getAttribute('aria-pressed') !== 'true'));
     this.labelsBtn.addEventListener('click', () => h.onCycleLabels());
     this.shareBtn.addEventListener('click', () => void this.share());
     q<HTMLButtonElement>('.gm-new').addEventListener('click', (e) => h.onOpenLanding(e.currentTarget as HTMLButtonElement));
@@ -270,6 +275,14 @@ export class Chrome {
 
   setPacing(p: 'even' | 'dates'): void {
     this.pacingBtn.setAttribute('aria-pressed', String(p === 'dates'));
+  }
+
+  get circuit(): boolean {
+    return this.circuitBtn.getAttribute('aria-pressed') === 'true';
+  }
+
+  setCircuit(on: boolean): void {
+    this.circuitBtn.setAttribute('aria-pressed', String(on));
   }
 
   setLabelMode(mode: string): void {
@@ -694,6 +707,7 @@ export class Chrome {
     else if (k === 's' || k === 'S') this.toggleStats();
     else if (k === 'r' || k === 'R') this.h.onResetCamera();
     else if (k === 'l' || k === 'L') this.h.onCycleLabels();
+    else if (k === 'm' || k === 'M') this.h.onCircuit(this.circuitBtn.getAttribute('aria-pressed') !== 'true');
     else if (k === 'h' || k === 'H') this.setHidden(!this.hidden);
     else if (k === 'Escape' && !this.pop.hidden) this.closePop();
     else if (k === 'Escape' && !this.legend.hidden) this.setLegend(false);

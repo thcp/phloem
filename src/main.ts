@@ -72,6 +72,21 @@ let sourceLabel = '';
 const seed = Number(params.get('seed')) || 1;
 const tpcParam = Number(params.get('tpc')) || undefined;
 let pacing: Pacing = params.get('pacing') === 'dates' ? 'dates' : 'even';
+let circuit = params.get('view') === 'circuit';
+camera.flat = circuit;
+renderer.setFlat(circuit);
+
+/** Switch between the 3D slime mold and the flat circuit board. The sim restarts at the current commit with the other layout. */
+function setCircuit(on: boolean): void {
+  if (on === circuit) return;
+  circuit = on;
+  camera.flat = on;
+  renderer.setFlat(on);
+  camera.reset();
+  shell.setCircuit(on);
+  client.setOptions({ circuit: on });
+  web.syncUrl();
+}
 
 function beginHistory(label: string, first: CommitEvent[], o: { estimate: number; auto: boolean; streaming: boolean }): void {
   commits = first.slice();
@@ -85,7 +100,7 @@ function beginHistory(label: string, first: CommitEvent[], o: { estimate: number
   shell.setStreaming(o.streaming, false);
   labels.setCommits(commits);
   const tpc = tpcParam ?? (o.auto ? autoTicksPerCommit(o.estimate || first.length) : undefined);
-  client.load(first, { seed, pacing, ...(tpc ? { ticksPerCommit: tpc } : {}) }, o.streaming);
+  client.load(first, { seed, pacing, circuit, ...(tpc ? { ticksPerCommit: tpc } : {}) }, o.streaming);
   if (!params.has('paused')) shell.setPlaying(true, true);
   if (import.meta.env.DEV || import.meta.env.MODE === 'e2e' || import.meta.env.VITE_EXPOSE_TEST_HOOKS === '1') {
     const hook = (window as unknown as Record<string, Record<string, unknown>>).__phloem;
@@ -125,6 +140,7 @@ const shell = new Chrome(appRoot, {
   onRefresh: () => web.refresh(),
   savedCount: () => web.savedCount(),
   onClearSaved: () => web.clearSaved(),
+  onCircuit: (on) => setCircuit(on),
   onPacing: (p) => {
     pacing = p;
     client.setOptions({ pacing: p });
@@ -132,6 +148,7 @@ const shell = new Chrome(appRoot, {
 });
 shell.setLabelMode(labels.mode);
 shell.setPacing(pacing);
+shell.setCircuit(circuit);
 if (statsOn) shell.toggleStats();
 client.onError = (m) => fatal(`Simulation error: ${m}`);
 
