@@ -251,7 +251,7 @@ describe('deployment config', () => {
     expect(catchAll).not.toMatch(/Cache-Control/);
   });
   it('defaults: the public site and source repository', () => {
-    expect(DEFAULT_SITE_URL).toBe('https://phloem.stemdeck.app/');
+    expect(DEFAULT_SITE_URL).toBe('https://phloem.thales.sh/');
     expect(DEFAULT_SOURCE_URL).toBe('https://github.com/thcp/phloem');
   });
 });

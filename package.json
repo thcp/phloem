@@ -4,7 +4,7 @@
   "description": "Watch a git history grow like a slime mold, in your browser.",
   "license": "AGPL-3.0-only",
   "version": "1.0.0",
-  "homepage": "https://phloem.stemdeck.app",
+  "homepage": "https://phloem.thales.sh",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thcp/phloem.git"
