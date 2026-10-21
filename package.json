@@ -3,7 +3,7 @@
   "private": true,
   "description": "Watch a git history grow like a slime mold, in your browser.",
   "license": "AGPL-3.0-only",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "homepage": "https://phloem.thales.sh",
   "repository": {
     "type": "git",
