@@ -272,7 +272,7 @@ def main():
         p.snap_camera()
         p.shot("w04-viewing-desktop")
         check("acme/mold" in pg.title(), f"document title follows the repo: {pg.title()!r}")
-        # --- share link round trip
+        # --- link round trip (the address bar is kept in sync; there is no Share button)
         p.js("() => window.__phloem.seek(30)")
         p.wait("() => window.__phloem.header[1] >= 29", 60)
         pg.select_option(".gm-speed", "2")
@@ -285,13 +285,8 @@ def main():
         import re
         m = re.search(r"[?&]t=(\d+)", url_now)
         check(m is not None and 25 <= int(m.group(1)) <= 60, f"position t= is written to the URL ({m.group(1) if m else None})")
-        p.ctx.grant_permissions(["clipboard-read", "clipboard-write"], origin=BASE.rstrip("/"))
-        pg.mouse.move(500, 300)
-        pg.click(".gm-share")
-        pg.wait_for_selector(".gm-toast.is-on")
-        copied = p.js("() => navigator.clipboard.readText()")
-        check(copied == pg.url and "repo=acme/mold" in copied, f"Share copies the current URL: {copied}")
-        check("Link copied" in pg.locator(".gm-toast").inner_text(), "toast confirms the copy")
+        copied = p.js("() => window.__phloem.web.syncUrl()")
+        check(copied == pg.url and "repo=acme/mold" in copied, f"the address bar holds the current view: {copied}")
         p.close()
         # open the copied link in a brand new browser context
         mock2 = GithubMock(commits=60)
@@ -439,7 +434,7 @@ def main():
         pg.wait_for_timeout(1500)
         p.shot("w09-viewer-mobile")
         check(no_overflow(p), "viewer: no horizontal overflow at 400px")
-        for sel in (".gm-play", ".gm-share", ".gm-names", ".gm-legend-btn"):
+        for sel in (".gm-play", ".gm-legend-btn"):
             bb = pg.locator(sel).bounding_box()
             check(bb is not None and bb["width"] >= 40 and bb["height"] >= 40, f"touch target {sel}: {bb['width']:.0f}x{bb['height']:.0f}")
         pg.tap(".gm-legend-btn")
@@ -457,9 +452,6 @@ def main():
         pg.set_input_files(".gm-file input[type=file]", "fixtures/stemdeck-first10.json")
         p.wait("() => window.__phloem.commits.length === 10 && !document.querySelector('.gm-chrome').classList.contains('is-backdrop')", 90)
         check("stemdeck-first10.json" in pg.locator(".gm-repo").inner_text(), "file name is the title")
-        pg.mouse.move(400, 300)
-        pg.click(".gm-share", force=True)  # aria-disabled, not disabled: it stays focusable and explains itself
-        check("file on your computer" in pg.locator(".gm-toast").inner_text(), "Share explains that a local file cannot be linked")
         p.close()
 
         # ------------------------------------------------------------ 8. reduced motion and no WebGL

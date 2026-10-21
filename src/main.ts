@@ -136,7 +136,6 @@ const shell = new Chrome(appRoot, {
   onSetLabels: (m) => setLabelMode(m),
   onCycleLabels: () => setLabelMode(LABEL_MODES[(LABEL_MODES.indexOf(labels.mode) + 1) % LABEL_MODES.length]),
   onOpenLanding: () => bridge.landing?.show({ overlay: true }),
-  onShare: () => web.syncUrl(),
   onExample: (repo) => web.loadExample(repo),
   onRefresh: () => web.refresh(),
   savedCount: () => web.savedCount(),
