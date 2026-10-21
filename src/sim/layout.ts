@@ -34,6 +34,9 @@ export interface LayoutParams {
    * the default view) instead of hiding behind each other.
    */
   clearZ: number;
+  /** Circuit mode: flat (z = 0), in-plane directions, nodes snapped to a `grid` pitch (0 = free). */
+  circuit: boolean;
+  grid: number;
 }
 
 export const DEFAULT_LAYOUT: LayoutParams = {
@@ -45,7 +48,12 @@ export const DEFAULT_LAYOUT: LayoutParams = {
   rootFlat: 0.4,
   flat: 0.5,
   clearZ: 0.55,
+  circuit: false,
+  grid: 0,
 };
+
+/** Circuit board layout: a flat plane, pads on a regular grid. */
+export const CIRCUIT_LAYOUT: LayoutParams = { ...DEFAULT_LAYOUT, fileExp: 0.5, rootFlat: 0, flat: 0, circuit: true, grid: 5 };
 
 export class Layout {
   x: number[] = [0];
@@ -115,13 +123,21 @@ export class Layout {
     const by = isRoot ? 0 : this.dy[parent];
     const bz = isRoot ? 0 : this.dz[parent];
     const d = this.d;
+    const G = p.grid;
     let best = -Infinity;
     let ox = px + bx * r0;
     let oy = py + by * r0;
     let oz = pz + bz * r0;
     for (let c = 0; c < p.candidates; c++) {
       let dev: number;
-      if (isRoot) {
+      if (p.circuit) {
+        // in-plane: rotate the parent's direction by a uniform angle (any angle for root children)
+        const a = isRoot ? rng.range(-Math.PI, Math.PI) : rng.range(-spread, spread);
+        dev = Math.abs(a);
+        d[0] = bx * Math.cos(a) - by * Math.sin(a);
+        d[1] = bx * Math.sin(a) + by * Math.cos(a);
+        d[2] = 0;
+      } else if (isRoot) {
         // uniform on the sphere
         const u = rng.range(-1, 1);
         const phi = rng.next() * Math.PI * 2;
@@ -139,9 +155,13 @@ export class Layout {
       d[2] *= flat;
       const l = 1 / Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
       const r = rng.range(r0, r1);
-      const cx = px + d[0] * l * r;
-      const cy = py + d[1] * l * r;
+      let cx = px + d[0] * l * r;
+      let cy = py + d[1] * l * r;
       const cz = pz + d[2] * l * r;
+      if (G > 0) {
+        cx = Math.round(cx / G) * G;
+        cy = Math.round(cy / G) * G;
+      }
       const cl = this.clearance(cx, cy, cz, clearR, parent);
       const score = cl - (dev / Math.PI) * clearR * 0.35;
       if (score > best) {

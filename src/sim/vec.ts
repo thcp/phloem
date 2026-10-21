@@ -56,3 +56,16 @@ export function normalize3(out: Float64Array): number {
   out[2] *= k;
   return l;
 }
+
+const SQ = Math.SQRT1_2;
+
+/** Snap out[0..1] to the nearest of the 8 octilinear unit directions (0/45/90 degrees); out[2] = 0. */
+export function snap8(out: Float64Array): void {
+  const a = Math.round(Math.atan2(out[1], out[0]) / (Math.PI / 4));
+  const k = ((a % 8) + 8) % 8;
+  const c = [1, SQ, 0, -SQ, -1, -SQ, 0, SQ];
+  const s = [0, SQ, 1, SQ, 0, -SQ, -1, -SQ];
+  out[0] = c[k];
+  out[1] = s[k];
+  out[2] = 0;
+}

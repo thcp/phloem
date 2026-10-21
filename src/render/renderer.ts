@@ -213,7 +213,14 @@ export class Renderer {
   /** prefers-reduced-motion: streaming/breathing amplitude and motes off, calmer wobble. */
   set reducedMotion(v: boolean) {
     this.reduced = v;
-    this.wobble = v ? 0.2 : 0.55;
+    this.wobble = this.flat ? 0.08 : v ? 0.2 : 0.55;
+  }
+
+  /** Circuit view: nearly rigid traces (the 3D wobble would bend the straight legs). */
+  private flat = false;
+  setFlat(v: boolean): void {
+    this.flat = v;
+    this.reducedMotion = this.reduced;
   }
 
   get reducedMotion(): boolean {

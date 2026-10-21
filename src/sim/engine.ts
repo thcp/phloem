@@ -2,8 +2,8 @@
 import type { CommitEvent } from '../model/events';
 import { FileTree, NodeKind, type TreeOp } from '../model/tree';
 import { Rng, authorHue } from '../model/rng';
-import { Layout } from './layout';
-import { E_ALIVE, N_ALIVE, N_TIP, Network, type NetworkParams, type Tip } from './network';
+import { CIRCUIT_LAYOUT, Layout } from './layout';
+import { CIRCUIT_NETWORK, E_ALIVE, N_ALIVE, N_TIP, Network, type NetworkParams, type Tip } from './network';
 import { CHUNK_FILES, applyTicks, extendSchedule, minGapTicks, type Pacing } from './schedule';
 import { ANCHOR_STRIDE, BURST_STRIDE, FOOD_STRIDE, H, HEADER, PULSE_STRIDE, SEG_R_MAX, SEG_STRIDE, frameViews } from './frame';
 import { BURSTS, FLOOD_SPEED, FLOOD_WAKE, GHOST_ALPHA, GHOST_LIFE, burstEnergy } from './activity';
@@ -29,6 +29,8 @@ export interface SimOptions {
   /** Ambient explorer spawns per reached file per tick. */
   ambientForaging: number;
   network: Partial<NetworkParams>;
+  /** Circuit board mode: flat, grid-snapped pads, traces routed at 45/90 degrees (see network.ts `circuit`). */
+  circuit: boolean;
 }
 
 export const DEFAULT_SIM_OPTIONS: SimOptions = {
@@ -40,6 +42,7 @@ export const DEFAULT_SIM_OPTIONS: SimOptions = {
   ambientForaging: 0.004,
   compactMinNodes: 4000,
   network: {},
+  circuit: false,
 };
 
 /** Arrival glint of a food the vein tip just reached: lifetime in ticks, grow-in ticks, extra glow (nutrient units). */
@@ -122,8 +125,8 @@ export class Simulation {
   constructor(readonly commits: CommitEvent[], opts: Partial<SimOptions> = {}) {
     this.opts = { ...DEFAULT_SIM_OPTIONS, ...opts };
     this.rng = new Rng(this.opts.seed);
-    this.net = new Network(this.opts.network);
-    this.layout = new Layout(this.opts.seed);
+    this.net = new Network(this.opts.circuit ? { ...CIRCUIT_NETWORK, ...this.opts.network, circuit: true } : this.opts.network);
+    this.layout = new Layout(this.opts.seed, this.opts.circuit ? CIRCUIT_LAYOUT : undefined);
     this.phys.push(this.net.root);
   }
 

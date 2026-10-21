@@ -37,6 +37,8 @@ export class Camera {
   autoRotate = false;
   /** The auto-director owns the azimuth while it is on: the turntable stands still (render/director.ts). */
   autoRotateSuppressed = false;
+  /** Circuit view: straight down onto the x-y plane. Orbit input is ignored and yaw / pitch are held at 0. */
+  flat = false;
   /** Device pixels at the bottom covered by UI chrome; auto-fit keeps the network above it. */
   bottomInset = 0;
 
@@ -157,6 +159,7 @@ export class Camera {
 
   /** Orbit by a device-pixel drag delta. Keeps auto framing on. */
   orbit(dxPx: number, dyPx: number): void {
+    if (this.flat) return;
     const s = ORBIT_RAD_PER_PX * (1000 / Math.max(500, Math.min(this.width, this.height * 1.6)));
     this.dYaw -= dxPx * s;
     this.dPitch += dyPx * s;
@@ -205,8 +208,8 @@ export class Camera {
 
   reset(): void {
     this.auto = true;
-    this.yaw = DEFAULT_YAW;
-    this.pitch = DEFAULT_PITCH;
+    this.yaw = this.flat ? 0 : DEFAULT_YAW;
+    this.pitch = this.flat ? 0 : DEFAULT_PITCH;
     this.vYaw = this.vPitch = this.vPanX = this.vPanY = 0;
     this.dYaw = this.dPitch = this.dPanX = this.dPanY = 0;
     this.zoomLog = 0;
@@ -245,6 +248,9 @@ export class Camera {
       if (this.autoRotate && !this.autoRotateSuppressed) this.yaw += AUTO_ROTATE_RAD_PER_S * dt;
     }
     this.dYaw = this.dPitch = this.dPanX = this.dPanY = 0;
+    if (this.flat) {
+      this.yaw = this.pitch = this.vYaw = this.vPitch = 0;
+    }
     if (this.pitch > PITCH_LIMIT) {
       this.pitch = PITCH_LIMIT;
       this.vPitch = 0;
