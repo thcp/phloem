@@ -252,6 +252,39 @@ a.gm-repo:hover { text-decoration: underline; text-underline-offset: 4px; }
 .gm-speedwrap select { padding-inline: 0.6rem; }
 .gm-speedwrap select option { background: #1a130a; }
 .gm-pill:hover, .gm-speedwrap select:hover { border-color: var(--gm-hair-strong); color: var(--gm-butter); }
+/* visualization style: a two-option segmented control */
+.gm-seg {
+  display: inline-flex;
+  height: 2.25rem;
+  padding: 3px;
+  gap: 2px;
+  background: rgba(14, 9, 4, 0.55);
+  border: 1px solid var(--gm-hair);
+  border-radius: 999px;
+}
+.gm-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--gm-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 0.8rem 0 0.65rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.gm-seg button svg { width: 16px; height: 16px; }
+.gm-seg button:hover { color: var(--gm-butter); }
+.gm-seg button[aria-checked='true'] { background: rgba(230, 196, 119, 0.2); color: var(--gm-butter); box-shadow: inset 0 0 0 1px var(--gm-hair-strong); }
+.gm-seg button:focus-visible { outline: 2px solid var(--gm-butter); outline-offset: 1px; }
+@media (max-width: 640px) {
+  .gm-seg button span { display: none; }
+  .gm-seg button { padding: 0 0.6rem; }
+}
+
 .gm-pill[aria-pressed='true'] { background: rgba(230, 196, 119, 0.16); border-color: var(--gm-hair-strong); color: var(--gm-butter); }
 
 /* ---- toast */
@@ -300,7 +333,7 @@ a.gm-repo:hover { text-decoration: underline; text-underline-offset: 4px; }
 }
 @media (pointer: coarse) {
   .gm-ibtn { height: 2.75rem; min-width: 2.75rem; }
-  .gm-pill, .gm-speedwrap select { height: 2.5rem; }
+  .gm-pill, .gm-speedwrap select, .gm-seg { height: 2.5rem; }
 }
 @media (max-height: 460px) {
   .gm-caption { display: none; }
