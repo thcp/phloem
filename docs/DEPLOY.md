@@ -27,13 +27,25 @@ A stale `.wrangler/deploy/config.json` (git-ignored) can redirect `wrangler depl
 
 ## 3. Music
 
-The tracks load from `https://audio.stemdeck.app` (the EU-jurisdiction R2 bucket `phloem`, custom domain `audio.stemdeck.app`). Two things restrict who may load them, and both list **both** sites:
+The tracks load from `https://audio.stemdeck.app` (the EU-jurisdiction R2 bucket `phloem`, custom domain `audio.stemdeck.app`; `r2.dev` public access is **off**, so the custom domain is the only way in).
+Only **https://phloem.thales.sh** may load them. These layers are configured in Cloudflare, not in this repository:
 
-* R2 CORS on the bucket: allowed origins `https://phloem.thales.sh` and the old `https://phloem.stemdeck.app` (GET, HEAD, `range`; the old one can be dropped, nothing serves from it any more).
-* A zone firewall rule on stemdeck.app, "audio: only the Phloem site may load the music": blocks `audio.stemdeck.app` unless the Referer starts with one of those two origins.
+* **R2 CORS** on the bucket: allowed origin `https://phloem.thales.sh` only (GET, HEAD, `range`).
+* **Firewall rule** in the stemdeck.app zone ("audio: only the Phloem site ... may fetch the music"): blocks `audio.stemdeck.app` unless the request looks like a browser `<audio>` element on that site: `Origin` = `https://phloem.thales.sh`, `Referer` starts with it,
+  `Sec-Fetch-Dest: audio`, `Sec-Fetch-Mode: cors`, `Sec-Fetch-Site` cross-site or same-site, and a `Range` header. Plain `curl` / `wget` / `fetch` scripts do not send these and get 403.
+* **Rate limit** on the host: at most 20 requests per 10 s per IP (a player needs a handful).
 
-Check: `curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/" -H "Range: bytes=0-99" https://audio.stemdeck.app/audio/heartbeat-drip.mp3` gives 206; a foreign Referer gives 403.
-To add another site, add it to both.
+What this does not do: a script that fakes every one of those headers still gets the file, and anything a browser can play can be saved from it (DevTools, screen capture). It stops casual downloads, hotlinking from other sites and naive scrapers.
+Stronger options if needed: short-lived signed URLs issued by a Worker, Cloudflare Bot Management, or Turnstile in front of the first request.
+
+Check (expect 403, 403, 206):
+
+```
+F=https://audio.stemdeck.app/audio/heartbeat-drip.mp3
+curl -s -o /dev/null -w "%{http_code}\n" $F
+curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/" -H "Range: bytes=0-99" $F
+curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/" -H "Origin: https://phloem.thales.sh" -H "Sec-Fetch-Dest: audio" -H "Sec-Fetch-Mode: cors" -H "Sec-Fetch-Site: cross-site" -H "Range: bytes=0-99" $F   # a faked browser: 206
+```
 
 ## 4. After it is live
 
