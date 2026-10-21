@@ -4,7 +4,7 @@
 
 Paste the address of a public GitHub repository and Phloem replays its history in 3D, right in your browser. Folders become junctions, files become food, and every commit feeds the network. The paths that get used a lot grow thick, like the veins of a real slime mold (*Physarum polycephalum*).
 
-**Try it: https://phloem.stemdeck.app**
+**Try it: https://phloem.thales.sh**
 
 Inspired by ["Mould redesigns Tokyo subway in 28 hours"](https://www.domusweb.it/en/sustainable-cities/2024/12/04/mould-redesigns-tokyo-subway-28-hours.html) (Domus, December 2024).
 
@@ -52,7 +52,7 @@ npm run preview      # serve dist/
 
 Two things to know when you run it locally:
 
-- **No music on localhost.** The tracks are protected on purpose: only phloem.stemdeck.app may load them, so the player will say "Music unavailable" on your machine.
+- **No music on localhost.** The tracks are protected on purpose: only phloem.thales.sh and phloem.stemdeck.app may load them, so the player will say "Music unavailable" on your machine.
 - **`?demo`** opens the bundled StemDeck history with no network at all. It only works in development and tests.
 
 ## URL parameters
