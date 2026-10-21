@@ -76,7 +76,7 @@ Everything runs in your browser. There is no backend, no analytics and no cookie
 
 ## Under the hood
 
-A static Vite and TypeScript app. The simulation runs in a Web Worker and the renderer is WebGL2. It is deployed on Vercel, and the music sits in a Cloudflare R2 bucket in the EU.
+A static Vite and TypeScript app. The simulation runs in a Web Worker and the renderer is WebGL2. It is deployed on Cloudflare Pages, and the music sits in a Cloudflare R2 bucket in the EU.
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the pieces fit together
 - [docs/WEB.md](docs/WEB.md): URL parameters, security headers, environment variables

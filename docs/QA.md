@@ -94,12 +94,11 @@ IndexedDB: file uploads write nothing; GitHub loads write one saved history per 
 
 ## Deploy configuration (reviewed, not deployed)
 
-* The primary host is Vercel (`docs/DEPLOY.md`). The CSP is identical in `index.html` (meta, build only), `public/_headers` and `vercel.json` (unit-tested); the build under it runs with zero violations: module scripts and Web Workers
+* The primary host is Cloudflare Pages (`docs/DEPLOY.md`). The CSP is identical in `index.html` (meta, build only) and `public/_headers` (unit-tested); the build under it runs with zero violations: module scripts and Web Workers
   (`worker-src 'self'`), the self-hosted font (`font-src 'self'`, preloaded with `crossorigin`), IndexedDB (not governed by CSP), the lazy demo chunk, `api.github.com` (mocked in tests).
 * Served from a **sub-path** (relative base, `SITE_URL` set) the app runs with zero errors; canonical / `og:*` tags are absolute then (default `SITE_URL` is https://phloem.stemdeck.app/).
 * Favicon (svg + 32 px), apple-touch icon, 192/512 icons, manifest and the 1200x630 `og.png` all exist and are referenced relatively.
-* `vercel.json`: framework Vite, `npm run build`, `dist`, the same CSP and security headers, immutable one-year caching for `/assets/*`, one hour for `/featured/*`, a day for icons/manifest, no rewrites / `cleanUrls` / `trailingSlash` (`tests/web.test.ts`). Not verified on a real Vercel deployment.
-* `public/_headers` is for Netlify / Cloudflare Pages (no overlapping `Cache-Control` rules, defect 11); Vercel ignores it.
+* `public/_headers`: the same CSP and security headers, immutable one-year caching for `/assets/*`, one hour for `/featured/*`, a day for icons/manifest, no overlapping `Cache-Control` rules (defect 11), no redirects or rewrites (`tests/web.test.ts`). Not verified on a real Cloudflare Pages deployment.
 * `.github/workflows/ci.yml` (type-check, tests, build on push / pull request) replaced the GitHub Pages deploy workflow; `featured.yml` is manual-only.
 * `screenshots/` (119 MB) is git-ignored; the README images are a small optimized set in `docs/img/`.
 * The footer and the viewer's tools row carry a "Source code (AGPL-3.0)" link driven by `VITE_SOURCE_URL` (default https://github.com/thcp/phloem).

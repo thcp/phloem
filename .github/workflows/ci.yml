@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Continuous integration only: type-check, unit tests and a production build on every push and pull request.
-# There is no deploy step here: the site is deployed by Vercel from this repository (docs/DEPLOY.md).
+# There is no deploy step here: the site is deployed by Cloudflare Pages from this repository (docs/DEPLOY.md).
 name: ci
 
 on:

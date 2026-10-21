@@ -1,6 +1,5 @@
-# NOT used on Vercel (the primary host): Vercel reads vercel.json, and simply serves this file as a harmless static asset.
-# Netlify and Cloudflare Pages read it as-is. Hosts that cannot set headers (GitHub Pages) still get the CSP from the <meta> tag
-# in index.html (added at build time).
+# Read by Cloudflare Pages (the primary host) and Netlify as-is. Hosts that cannot set headers (GitHub Pages) still get the CSP
+# from the <meta> tag in index.html (added at build time).
 # Keep the Content-Security-Policy line identical to CSP in vite.config.ts (tests/web.test.ts checks it).
 
 /*

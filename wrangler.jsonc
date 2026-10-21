@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "phloem",
+  "compatibility_date": "2026-10-12",
+  "observability": { "enabled": true },
+  "assets": { "directory": "./dist" },
+  "routes": [
+    { "pattern": "phloem.thales.sh", "custom_domain": true },
+    { "pattern": "phloem.stemdeck.app", "custom_domain": true }
+  ]
+}

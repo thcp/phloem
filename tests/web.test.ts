@@ -232,29 +232,23 @@ import { CSP, DEFAULT_SITE_URL } from '../vite.config';
 import { DEFAULT_SOURCE_URL } from '../src/web/source';
 
 describe('deployment config', () => {
-  it('public/_headers and vercel.json carry the same CSP as the build (plus frame-ancestors, which a meta tag cannot express)', () => {
+  it('public/_headers carries the same CSP as the build (plus frame-ancestors, which a meta tag cannot express)', () => {
     const headers = readFileSync('public/_headers', 'utf8');
     const line = /Content-Security-Policy: (.+)/.exec(headers)![1];
     expect(line).toBe(`${CSP}; frame-ancestors 'none'`);
-    const vercel = JSON.parse(readFileSync('vercel.json', 'utf8'));
-    const v = vercel.headers[0].headers.find((h: { key: string }) => h.key === 'Content-Security-Policy').value;
-    expect(v).toBe(line);
   });
   it('the CSP allows only this origin and api.github.com', () => {
     expect(CSP).toContain("connect-src 'self' https://api.github.com");
     expect(CSP).not.toMatch(/unsafe-/);
     expect(CSP).toContain("script-src 'self'");
   });
-  it('Vercel config: build, output, immutable hashed assets, short cache for featured, no URL rewriting', () => {
-    const vercel = JSON.parse(readFileSync('vercel.json', 'utf8'));
-    expect(vercel.buildCommand).toBe('npm run build');
-    expect(vercel.outputDirectory).toBe('dist');
-    expect(vercel.cleanUrls).toBeUndefined();
-    expect(vercel.trailingSlash).toBeUndefined();
-    expect(vercel.rewrites).toBeUndefined();
-    const cache = (src: string) => vercel.headers.find((h: { source: string }) => h.source === src)?.headers[0].value;
-    expect(cache('/assets/(.*)')).toBe('public, max-age=31536000, immutable');
-    expect(cache('/featured/(.*)')).toBe('public, max-age=3600');
+  it('_headers: immutable hashed assets, short cache for featured, no overlapping Cache-Control rules', () => {
+    const headers = readFileSync('public/_headers', 'utf8');
+    expect(headers).toMatch(/\/assets\/\*\n  Cache-Control: public, max-age=31536000, immutable/);
+    expect(headers).toMatch(/\/featured\/\*\n  Cache-Control: public, max-age=3600/);
+    // the catch-all block sets security headers only: Cache-Control per path would be merged by Pages
+    const catchAll = /^\/\*\n((?:  .+\n)+)/m.exec(headers)![1];
+    expect(catchAll).not.toMatch(/Cache-Control/);
   });
   it('defaults: the public site and source repository', () => {
     expect(DEFAULT_SITE_URL).toBe('https://phloem.stemdeck.app/');
