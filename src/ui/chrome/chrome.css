@@ -277,10 +277,14 @@ a.gm-repo:hover { text-decoration: underline; text-underline-offset: 4px; }
   transition: background 0.18s ease, color 0.18s ease;
 }
 .gm-seg button svg { width: 16px; height: 16px; }
+.gm-seg-lead { display: inline-flex; align-items: center; padding: 0 0.15rem 0 0.55rem; color: var(--gm-dim); }
+.gm-seg-lead svg { width: 16px; height: 16px; }
+.gm-seg-names button { padding: 0 0.7rem; }
 .gm-seg button:hover { color: var(--gm-butter); }
 .gm-seg button[aria-checked='true'] { background: rgba(230, 196, 119, 0.2); color: var(--gm-butter); box-shadow: inset 0 0 0 1px var(--gm-hair-strong); }
 .gm-seg button:focus-visible { outline: 2px solid var(--gm-butter); outline-offset: 1px; }
 @media (max-width: 640px) {
+  .gm-seg-names { display: none; } /* narrow windows keep the Names button in the top bar */
   .gm-seg button span { display: none; }
   .gm-seg button { padding: 0 0.6rem; }
 }
