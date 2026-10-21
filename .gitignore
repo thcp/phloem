@@ -3,7 +3,6 @@ node_modules/
 dist/
 dist-e2e/
 .vite/
-.vercel/
 *.tsbuildinfo
 coverage/
 
@@ -19,7 +18,7 @@ scratch/
 *.out
 *.trace
 
-# local environment files (use Vercel's environment variables; nothing in the repo reads secrets)
+# local environment files (use the host's environment variables; nothing in the repo reads secrets)
 .env
 .env.*
 !.env.example
@@ -39,3 +38,8 @@ desktop.ini
 # local-only files
 .local/
 .infisical.json
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example

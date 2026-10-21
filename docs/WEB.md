@@ -78,12 +78,12 @@ Any failure (403, 429, network, odd body) is silent: the local list stays and se
 
 `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self' https://audio.stemdeck.app; connect-src 'self' https://api.github.com; worker-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'`
 (+ `frame-ancestors 'none'` where headers are possible). No inline script or style anywhere (the build sets `assetsInlineLimit: 0`; JS sets styles through the CSSOM, which CSP allows).
-The build injects it as a `<meta>` tag (so hosts that cannot set headers enforce it too; dev server excluded for HMR) and `public/_headers` / `vercel.json` repeat it as a header;
-`tests/web.test.ts` checks the three are identical, and `tests/e2e/web_check.py` fails on any `securitypolicyviolation` event.
+The build injects it as a `<meta>` tag (so hosts that cannot set headers enforce it too; dev server excluded for HMR) and `public/_headers` repeats it as a header;
+`tests/web.test.ts` checks the two are identical, and `tests/e2e/web_check.py` fails on any `securitypolicyviolation` event.
 
 ## Deploying
 
-The primary host is **Vercel** at https://phloem.stemdeck.app; the exact steps (import the repository, environment variables, domain and DNS record, Hobby plan note) are in **`docs/DEPLOY.md`**.
+The host is **Cloudflare Pages**, at https://phloem.stemdeck.app and https://phloem.thales.sh; the exact steps (create the project, environment variables, domains, music origins) are in **`docs/DEPLOY.md`**.
 The build is relative-path (`base: './'`), so the same `dist/` also works on a root domain or under a sub-path.
 
 | Variable | Effect |
@@ -93,11 +93,11 @@ The build is relative-path (`base: './'`), so the same `dist/` also works on a r
 | `PHLOEM_BASE` | Optional absolute public path (default `./`). |
 | `VITE_EXPOSE_TEST_HOOKS=1` / `--mode e2e` | Builds the `window.__phloem` test hook in (see below). Never set it for a production deployment. |
 
-`vercel.json` (framework Vite, `npm run build`, `dist`) sets the security headers (the same CSP as the `<meta>` tag, `nosniff`, referrer, permissions and COOP policies), `max-age=31536000, immutable` for the hashed `/assets/*`,
-`max-age=3600` for `/featured/*` and a day for icons, favicon and manifest. No rewrites, `cleanUrls` or `trailingSlash`: there are no routes. `tests/web.test.ts` checks the file.
+`public/_headers` sets the security headers (the same CSP as the `<meta>` tag, `nosniff`, referrer, permissions and COOP policies), `max-age=31536000, immutable` for the hashed `/assets/*`,
+`max-age=3600` for `/featured/*` and a day for icons, favicon and manifest. No rewrites or redirects: there are no routes. `tests/web.test.ts` checks the file.
 CI (`.github/workflows/ci.yml`) type-checks, tests and builds on every push and pull request; it deploys nothing.
 
-**Other hosts (short).** Any static host works: build with `npm run build` and publish `dist/`, and set `SITE_URL`. Netlify and Cloudflare Pages read `public/_headers` as-is (same CSP, caching, nosniff, referrer policy; Vercel ignores it and serves it as a harmless static file).
+**Other hosts (short).** Any static host works: build with `npm run build` and publish `dist/`, and set `SITE_URL`. Netlify and Cloudflare Pages read `public/_headers` as-is (same CSP, caching, nosniff, referrer policy).
 GitHub Pages cannot set headers; the CSP then comes from the `<meta>` tag only (no `frame-ancestors`), and under a project path (`/phloem/`) the relative base keeps working but `SITE_URL` must include the path. There is no Pages workflow any more.
 
 **Test hook.** `window.__phloem` (the Playwright checks poll it) can reach the in-memory GitHub token through `web`, so it is compiled out of normal builds: `src/main.ts` installs it only when `import.meta.env.DEV`, `MODE === 'e2e'` or `VITE_EXPOSE_TEST_HOOKS === '1'`

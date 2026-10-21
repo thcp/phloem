@@ -27,13 +27,15 @@
     "scale": "esbuild scripts/scale.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/phloem-scale.mjs && node --expose-gc node_modules/.cache/phloem-scale.mjs",
     "synth-log": "esbuild scripts/synthetic-log.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/phloem-synth.mjs && SYNTH_LOG_MAIN=1 node node_modules/.cache/phloem-synth.mjs",
     "director-trace": "esbuild scripts/director-trace.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/phloem-director.mjs && node node_modules/.cache/phloem-director.mjs",
-    "featured": "node scripts/build-featured.mjs"
+    "featured": "node scripts/build-featured.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
     "esbuild": "^0.25.12",
     "typescript": "^5.9.3",
     "vite": "^6.4.4",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.7",
+    "wrangler": "^4.151.3"
   }
 }
