@@ -55,7 +55,6 @@ export class Chrome {
   private pacingBtn: HTMLButtonElement;
   private styleBtns: HTMLButtonElement[];
   private nameBtns: HTMLButtonElement[];
-  private labelsBtn: HTMLButtonElement;
   private legendBtn: HTMLButtonElement;
   private legend: HTMLElement;
   private fsBtn: HTMLButtonElement;
@@ -105,7 +104,6 @@ export class Chrome {
   <button type="button" class="gm-ibtn gm-new" title="Visualize another repository">${MARK}<span class="gm-lbl gm-brandword">Phloem</span></button>
   <div class="gm-title"><span class="gm-repo"></span><span class="gm-branch"></span></div>
   <div class="gm-actions">
-    <button type="button" class="gm-ibtn gm-names" aria-pressed="true" title="Name labels: all, active, off (L)">${ICON.names}<span class="gm-lbl">Names</span></button>
     <button type="button" class="gm-ibtn gm-share" title="Copy a link to this view">${ICON.share}<span class="gm-lbl">Share</span></button>
     <button type="button" class="gm-ibtn gm-legend-btn" aria-expanded="false" aria-controls="gm-legend" title="Authors">${ICON.people}<span class="gm-lbl">Authors</span></button>
     <button type="button" class="gm-ibtn gm-fs" aria-pressed="false" title="Fullscreen (F)" hidden>${ICON.expand}<span class="gm-lbl">Fullscreen</span></button>
@@ -139,12 +137,13 @@ export class Chrome {
     <div class="gm-readout"><span class="gm-n"></span><span class="gm-tot"></span><span class="gm-date"></span></div>
     <span class="gm-grow"></span>
     <div class="gm-seg gm-seg-names" role="radiogroup" aria-label="Name labels" title="Name labels. Press L to cycle.">
-      <span class="gm-seg-lead" aria-hidden="true">${ICON.names}</span>
+      <span class="gm-seg-cap">Names</span>
       <button type="button" role="radio" aria-checked="false" data-names="off">Off</button>
       <button type="button" role="radio" aria-checked="true" data-names="active">Active</button>
       <button type="button" role="radio" aria-checked="false" data-names="all">All</button>
     </div>
     <div class="gm-seg gm-seg-style" role="radiogroup" aria-label="Visualization style" title="Visualization style. Press M to switch.">
+      <span class="gm-seg-cap">View</span>
       <button type="button" role="radio" aria-checked="true" data-style="organic">${ICON.organic}<span>Organic</span></button>
       <button type="button" role="radio" aria-checked="false" data-style="circuit">${ICON.circuit}<span>Circuit</span></button>
     </div>
@@ -166,7 +165,6 @@ export class Chrome {
     this.pacingBtn = q('.gm-pacing');
     this.styleBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-style button'));
     this.nameBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-names button'));
-    this.labelsBtn = q('.gm-names');
     this.legendBtn = q('.gm-legend-btn');
     this.legend = q('.gm-legend');
     this.fsBtn = q('.gm-fs');
@@ -235,7 +233,6 @@ export class Chrome {
         b.blur(); // hand the keyboard back (Space, arrows, M)
       });
     }
-    this.labelsBtn.addEventListener('click', () => h.onCycleLabels());
     this.shareBtn.addEventListener('click', () => void this.share());
     q<HTMLButtonElement>('.gm-new').addEventListener('click', (e) => h.onOpenLanding(e.currentTarget as HTMLButtonElement));
     this.legendBtn.addEventListener('click', () => this.setLegend(this.legend.hidden));
@@ -310,10 +307,7 @@ export class Chrome {
   }
 
   setLabelMode(mode: string): void {
-    this.q('.gm-names .gm-lbl').textContent = `Names: ${mode}`;
-    this.labelsBtn.setAttribute('aria-pressed', String(mode !== 'off'));
     for (const b of this.nameBtns) b.setAttribute('aria-checked', String(b.dataset.names === mode));
-    this.labelsBtn.title = `Name labels: ${mode}. Click or press L to change.`;
   }
 
   setSpeed(s: number): void {
