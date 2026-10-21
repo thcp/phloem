@@ -26,7 +26,6 @@ export interface ChromeHandlers {
   /** The "visualize another" button / Escape-less entry back to the landing card. */
   onOpenLanding(opener: HTMLElement): void;
   /** Called right before the link is copied: return the URL to share (the page refreshes its URL first). */
-  onShare(): string;
   /** Load one of the featured repositories (the whole history). */
   onExample(repo: string): void;
   /** Re-fetch the current repository (only commits not cached cost requests). */
@@ -58,7 +57,6 @@ export class Chrome {
   private legendBtn: HTMLButtonElement;
   private legend: HTMLElement;
   private fsBtn: HTMLButtonElement;
-  private shareBtn: HTMLButtonElement;
   private repoEl: HTMLElement;
   private branchEl: HTMLElement;
   private msg: HTMLElement;
@@ -87,8 +85,6 @@ export class Chrome {
   private commits: CommitEvent[] = [];
   private dates: number[] = [];
   private bins: number[] = [];
-  private shareable = true;
-  private shareNote = '';
   private legendAt = 0;
   private legendCount = -1;
   private sparkDrawnAt = '';
@@ -104,7 +100,6 @@ export class Chrome {
   <button type="button" class="gm-ibtn gm-new" title="Visualize another repository">${MARK}<span class="gm-lbl gm-brandword">Phloem</span></button>
   <div class="gm-title"><span class="gm-repo"></span><span class="gm-branch"></span></div>
   <div class="gm-actions">
-    <button type="button" class="gm-ibtn gm-share" title="Copy a link to this view">${ICON.share}<span class="gm-lbl">Share</span></button>
     <button type="button" class="gm-ibtn gm-legend-btn" aria-expanded="false" aria-controls="gm-legend" title="Authors">${ICON.people}<span class="gm-lbl">Authors</span></button>
     <button type="button" class="gm-ibtn gm-fs" aria-pressed="false" title="Fullscreen (F)" hidden>${ICON.expand}<span class="gm-lbl">Fullscreen</span></button>
   </div>
@@ -168,7 +163,6 @@ export class Chrome {
     this.legendBtn = q('.gm-legend-btn');
     this.legend = q('.gm-legend');
     this.fsBtn = q('.gm-fs');
-    this.shareBtn = q('.gm-share');
     this.repoEl = q('.gm-repo');
     this.branchEl = q('.gm-branch');
     this.msg = q('.gm-msg');
@@ -233,7 +227,6 @@ export class Chrome {
         b.blur(); // hand the keyboard back (Space, arrows, M)
       });
     }
-    this.shareBtn.addEventListener('click', () => void this.share());
     q<HTMLButtonElement>('.gm-new').addEventListener('click', (e) => h.onOpenLanding(e.currentTarget as HTMLButtonElement));
     this.legendBtn.addEventListener('click', () => this.setLegend(this.legend.hidden));
     if (document.fullscreenEnabled) {
@@ -338,9 +331,6 @@ export class Chrome {
     this.repoEl.replaceWith(el);
     this.repoEl = el;
     this.branchEl.textContent = o.branch ? `@${o.branch}` : '';
-    this.shareable = o.shareable ?? true;
-    this.shareNote = o.shareNote ?? '';
-    this.shareBtn.setAttribute('aria-disabled', String(!this.shareable));
     document.title = label ? `${label} · Phloem` : 'Phloem';
   }
 
@@ -637,29 +627,6 @@ export class Chrome {
   private toggleFullscreen(): void {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void document.documentElement.requestFullscreen?.().catch(() => undefined);
-  }
-
-  private async share(): Promise<void> {
-    if (!this.shareable) {
-      this.say(this.shareNote || 'This view cannot be shared by link.');
-      return;
-    }
-    const url = this.h.onShare();
-    const touch = matchMedia('(pointer: coarse)').matches;
-    if (touch && typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ url, title: document.title });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === 'AbortError') return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      this.say('Link copied');
-    } catch {
-      this.say('Copy this link', url);
-    }
   }
 
   /** Short message near the bottom; with `copy`, a selected read-only field for browsers that block the clipboard. */
