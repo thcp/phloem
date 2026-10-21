@@ -60,7 +60,12 @@ curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/"
 
   Expect the CSP, `nosniff`, `max-age=0, must-revalidate` on `/`, `max-age=3600` on `/featured/*`, and `max-age=31536000, immutable` on `/assets/*`.
 * Share preview: paste the URL into a social/Slack unfurl tester; the image is `/og.png` (1200x630).
-* Every push to `main` deploys through `.github/workflows/deploy.yml` (tests, build, `wrangler deploy`); it can also be run by hand from the Actions tab. The job runs in the GitHub environment **Production**, which holds the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` and only lets the `main` branch deploy to it (Settings > Environments), so a workflow on any other branch cannot read them. The token is the account API token "phloem GitHub Actions deploy (Production environment)" with only: Workers Scripts Write and Account Settings Read (account), and Workers Routes Write and Zone Read (zone thales.sh only). It cannot edit DNS, firewall rules or R2. To rotate it: create a new token with those four permissions, update the environment secret (`gh secret set CLOUDFLARE_API_TOKEN --env Production`), delete the old token. Pull requests are only built and tested by `ci.yml`. `npm run deploy` from a laptop still works.
+* The site deploys only when a GitHub release is **published and marked Latest** (`.github/workflows/deploy.yml`): a first job checks that the release tag is the one `releases/latest` returns, a second runs the tests, builds and runs `wrangler deploy`.
+  Pushes to `main` and pull requests never deploy; `ci.yml` only builds and tests them. To ship: merge to `main`, then `gh release create vX.Y.Z --target main --latest --title "Phloem X.Y.Z" --notes ...`.
+  To redeploy a release by hand: Actions > deploy > Run workflow, choosing the tag as the ref. A pre-release or an older release does not deploy. `npm run deploy` from a laptop still works.
+* The job runs in the GitHub environment **Production**, which holds the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` and only lets tags matching `v*` use it (Settings > Environments), so a workflow on a branch (including `main`) cannot read them; `v*` tags cannot be moved or deleted (ruleset "Protect release tags").
+  The token is the account API token "phloem GitHub Actions deploy (Production environment)" with only: Workers Scripts Write and Account Settings Read (account), and Workers Routes Write and Zone Read (zone thales.sh only). It cannot edit DNS, firewall rules or R2.
+  To rotate it: create a new token with those four permissions, update the environment secret (`gh secret set CLOUDFLARE_API_TOKEN --env Production`), delete the old token.
 
 ## Notes
 
