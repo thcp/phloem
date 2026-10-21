@@ -20,6 +20,7 @@ export interface ChromeHandlers {
   onStats(visible: boolean): void;
   onResetCamera(): void;
   onCycleLabels(): void;
+  onSetLabels(mode: 'all' | 'active' | 'off'): void;
   onPacing(pacing: 'even' | 'dates'): void;
   onCircuit(on: boolean): void;
   /** The "visualize another" button / Escape-less entry back to the landing card. */
@@ -53,6 +54,7 @@ export class Chrome {
   private speedSel: HTMLSelectElement;
   private pacingBtn: HTMLButtonElement;
   private styleBtns: HTMLButtonElement[];
+  private nameBtns: HTMLButtonElement[];
   private labelsBtn: HTMLButtonElement;
   private legendBtn: HTMLButtonElement;
   private legend: HTMLElement;
@@ -136,7 +138,13 @@ export class Chrome {
     <button type="button" class="gm-play" aria-label="Pause">${ICON.pause}</button>
     <div class="gm-readout"><span class="gm-n"></span><span class="gm-tot"></span><span class="gm-date"></span></div>
     <span class="gm-grow"></span>
-    <div class="gm-seg" role="radiogroup" aria-label="Visualization style" title="Visualization style. Press M to switch.">
+    <div class="gm-seg gm-seg-names" role="radiogroup" aria-label="Name labels" title="Name labels. Press L to cycle.">
+      <span class="gm-seg-lead" aria-hidden="true">${ICON.names}</span>
+      <button type="button" role="radio" aria-checked="false" data-names="off">Off</button>
+      <button type="button" role="radio" aria-checked="true" data-names="active">Active</button>
+      <button type="button" role="radio" aria-checked="false" data-names="all">All</button>
+    </div>
+    <div class="gm-seg gm-seg-style" role="radiogroup" aria-label="Visualization style" title="Visualization style. Press M to switch.">
       <button type="button" role="radio" aria-checked="true" data-style="organic">${ICON.organic}<span>Organic</span></button>
       <button type="button" role="radio" aria-checked="false" data-style="circuit">${ICON.circuit}<span>Circuit</span></button>
     </div>
@@ -156,7 +164,8 @@ export class Chrome {
     this.dateEl = q('.gm-date');
     this.speedSel = q('.gm-speed');
     this.pacingBtn = q('.gm-pacing');
-    this.styleBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg button'));
+    this.styleBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-style button'));
+    this.nameBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-names button'));
     this.labelsBtn = q('.gm-names');
     this.legendBtn = q('.gm-legend-btn');
     this.legend = q('.gm-legend');
@@ -213,6 +222,12 @@ export class Chrome {
     });
     this.speedSel.addEventListener('change', () => h.onSpeed(Number(this.speedSel.value)));
     this.pacingBtn.addEventListener('click', () => h.onPacing(this.pacingBtn.getAttribute('aria-pressed') === 'true' ? 'even' : 'dates'));
+    for (const b of this.nameBtns) {
+      b.addEventListener('click', () => {
+        h.onSetLabels(b.dataset.names as 'all' | 'active' | 'off');
+        b.blur();
+      });
+    }
     for (const b of this.styleBtns) {
       b.addEventListener('click', () => {
         const on = b.dataset.style === 'circuit';
@@ -297,6 +312,7 @@ export class Chrome {
   setLabelMode(mode: string): void {
     this.q('.gm-names .gm-lbl').textContent = `Names: ${mode}`;
     this.labelsBtn.setAttribute('aria-pressed', String(mode !== 'off'));
+    for (const b of this.nameBtns) b.setAttribute('aria-checked', String(b.dataset.names === mode));
     this.labelsBtn.title = `Name labels: ${mode}. Click or press L to change.`;
   }
 

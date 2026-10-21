@@ -133,6 +133,7 @@ const shell = new Chrome(appRoot, {
   onSpeed: (s) => client.setSpeed(s),
   onStats: (v) => (statsOn = v),
   onResetCamera: () => (userInput(), camera.reset()),
+  onSetLabels: (m) => setLabelMode(m),
   onCycleLabels: () => setLabelMode(LABEL_MODES[(LABEL_MODES.indexOf(labels.mode) + 1) % LABEL_MODES.length]),
   onOpenLanding: () => bridge.landing?.show({ overlay: true }),
   onShare: () => web.syncUrl(),
