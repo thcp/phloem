@@ -52,7 +52,7 @@ export class Chrome {
   private dateEl: HTMLElement;
   private speedSel: HTMLSelectElement;
   private pacingBtn: HTMLButtonElement;
-  private styleSel: HTMLSelectElement;
+  private styleBtns: HTMLButtonElement[];
   private labelsBtn: HTMLButtonElement;
   private legendBtn: HTMLButtonElement;
   private legend: HTMLElement;
@@ -136,7 +136,10 @@ export class Chrome {
     <button type="button" class="gm-play" aria-label="Pause">${ICON.pause}</button>
     <div class="gm-readout"><span class="gm-n"></span><span class="gm-tot"></span><span class="gm-date"></span></div>
     <span class="gm-grow"></span>
-    <label class="gm-speedwrap gm-stylewrap" title="Visualization style. Press M to switch."><span class="gm-sr">Visualization style</span><select class="gm-style"><option value="organic">Organic</option><option value="circuit">Circuit</option></select></label>
+    <div class="gm-seg" role="radiogroup" aria-label="Visualization style" title="Visualization style. Press M to switch.">
+      <button type="button" role="radio" aria-checked="true" data-style="organic">${ICON.organic}<span>Organic</span></button>
+      <button type="button" role="radio" aria-checked="false" data-style="circuit">${ICON.circuit}<span>Circuit</span></button>
+    </div>
     <button type="button" class="gm-pill gm-pacing" aria-pressed="false" title="Space commits by their real dates (long idle gaps are compressed)">By date</button>
     <label class="gm-speedwrap"><span class="gm-sr">Speed</span><select class="gm-speed">${SPEEDS.map((s) => `<option value="${s}"${s === 1 ? ' selected' : ''}>${s}×</option>`).join('')}</select></label>
   </div>
@@ -153,7 +156,7 @@ export class Chrome {
     this.dateEl = q('.gm-date');
     this.speedSel = q('.gm-speed');
     this.pacingBtn = q('.gm-pacing');
-    this.styleSel = q('.gm-style');
+    this.styleBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg button'));
     this.labelsBtn = q('.gm-names');
     this.legendBtn = q('.gm-legend-btn');
     this.legend = q('.gm-legend');
@@ -210,10 +213,13 @@ export class Chrome {
     });
     this.speedSel.addEventListener('change', () => h.onSpeed(Number(this.speedSel.value)));
     this.pacingBtn.addEventListener('click', () => h.onPacing(this.pacingBtn.getAttribute('aria-pressed') === 'true' ? 'even' : 'dates'));
-    this.styleSel.addEventListener('change', () => {
-      h.onCircuit(this.styleSel.value === 'circuit');
-      this.styleSel.blur(); // hand the keyboard back (Space, arrows, M)
-    });
+    for (const b of this.styleBtns) {
+      b.addEventListener('click', () => {
+        const on = b.dataset.style === 'circuit';
+        if (on !== this.circuit) h.onCircuit(on);
+        b.blur(); // hand the keyboard back (Space, arrows, M)
+      });
+    }
     this.labelsBtn.addEventListener('click', () => h.onCycleLabels());
     this.shareBtn.addEventListener('click', () => void this.share());
     q<HTMLButtonElement>('.gm-new').addEventListener('click', (e) => h.onOpenLanding(e.currentTarget as HTMLButtonElement));
@@ -281,11 +287,11 @@ export class Chrome {
   }
 
   get circuit(): boolean {
-    return this.styleSel.value === 'circuit';
+    return this.styleBtns.some((b) => b.dataset.style === 'circuit' && b.getAttribute('aria-checked') === 'true');
   }
 
   setCircuit(on: boolean): void {
-    this.styleSel.value = on ? 'circuit' : 'organic';
+    for (const b of this.styleBtns) b.setAttribute('aria-checked', String((b.dataset.style === 'circuit') === on));
   }
 
   setLabelMode(mode: string): void {
