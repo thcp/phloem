@@ -114,7 +114,7 @@ All in `sim/schedule.ts`, `sim/snapshot.ts`, `worker/controller.ts` (and the `Si
 
 - **Schedule.** `sim.sched[i]` is the tick commit *i* lands on; it depends only on commits `0..i` (so it extends as commits are appended).
   `pacing: 'even'` (default) = `i * ticksPerCommit`. `pacing: 'dates'` = gaps follow author-date gaps, compressed logarithmically
-  (`gap = tpc * clamp(0.3 + 0.9 log10(1 + hours), 0.3, 4)`; out-of-order dates count as 0 h). Selectable in the bar ("even pace / by date", `?pacing=dates`).
+  (`gap = tpc * clamp(0.3 + 0.9 log10(1 + hours), 0.3, 4)`; out-of-order dates count as 0 h). Not exposed in the UI (the simulation supports it; the viewer always uses even pace).
   Loaded (file / GitHub) histories get `ticksPerCommit = autoTicksPerCommit(n)` = clamp(18000 / n, 2, 45) so a 20k-commit replay is minutes, not hours;
   fixtures, `?stress=` and `?tpc=` keep their explicit values.
 - **Append / streaming.** `load` with `streaming: true`, then `append`. While streaming the clock never enters `sim.horizon` =

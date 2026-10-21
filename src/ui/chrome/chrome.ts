@@ -21,7 +21,6 @@ export interface ChromeHandlers {
   onResetCamera(): void;
   onCycleLabels(): void;
   onSetLabels(mode: 'all' | 'active' | 'off'): void;
-  onPacing(pacing: 'even' | 'dates'): void;
   onCircuit(on: boolean): void;
   /** The "visualize another" button / Escape-less entry back to the landing card. */
   onOpenLanding(opener: HTMLElement): void;
@@ -51,7 +50,6 @@ export class Chrome {
   private totEl: HTMLElement;
   private dateEl: HTMLElement;
   private speedSel: HTMLSelectElement;
-  private pacingBtn: HTMLButtonElement;
   private styleBtns: HTMLButtonElement[];
   private nameBtns: HTMLButtonElement[];
   private legendBtn: HTMLButtonElement;
@@ -142,7 +140,6 @@ export class Chrome {
       <button type="button" role="radio" aria-checked="true" data-style="organic">${ICON.organic}<span>Organic</span></button>
       <button type="button" role="radio" aria-checked="false" data-style="circuit">${ICON.circuit}<span>Circuit</span></button>
     </div>
-    <button type="button" class="gm-pill gm-pacing" aria-pressed="false" title="Space commits by their real dates (long idle gaps are compressed)">By date</button>
     <label class="gm-speedwrap"><span class="gm-sr">Speed</span><select class="gm-speed">${SPEEDS.map((s) => `<option value="${s}"${s === 1 ? ' selected' : ''}>${s}×</option>`).join('')}</select></label>
   </div>
 </div>
@@ -157,7 +154,6 @@ export class Chrome {
     this.totEl = q('.gm-tot');
     this.dateEl = q('.gm-date');
     this.speedSel = q('.gm-speed');
-    this.pacingBtn = q('.gm-pacing');
     this.styleBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-style button'));
     this.nameBtns = Array.from(this.el.querySelectorAll<HTMLButtonElement>('.gm-seg-names button'));
     this.legendBtn = q('.gm-legend-btn');
@@ -213,7 +209,6 @@ export class Chrome {
       if (!this.scrubbing) this.tip.hidden = true;
     });
     this.speedSel.addEventListener('change', () => h.onSpeed(Number(this.speedSel.value)));
-    this.pacingBtn.addEventListener('click', () => h.onPacing(this.pacingBtn.getAttribute('aria-pressed') === 'true' ? 'even' : 'dates'));
     for (const b of this.nameBtns) {
       b.addEventListener('click', () => {
         h.onSetLabels(b.dataset.names as 'all' | 'active' | 'off');
@@ -285,10 +280,6 @@ export class Chrome {
       this.rebuildTimeline();
       this.updateLegend(true);
     }
-  }
-
-  setPacing(p: 'even' | 'dates'): void {
-    this.pacingBtn.setAttribute('aria-pressed', String(p === 'dates'));
   }
 
   get circuit(): boolean {

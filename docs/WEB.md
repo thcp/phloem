@@ -10,9 +10,9 @@ server it talks to is `api.github.com`.
    blown up 1.55x so veins sweep past it. Reduced motion: the grown mold, still, no card animation.
    Repository field (accepts `owner/name`, a github.com URL, `owner/name@branch`, `.../tree/branch`), the **Featured** cards (the only examples: stemdeck, netbattle and Encore Karaoke, prebuilt, instant, no GitHub requests), a History selector
    (default **All available (within your quota)**; optional narrowing to the latest 100 / 200 / 500 / 1,000 / 3,000) with a live cost line, a GitHub token disclosure, and "Upload a git log instead" (exact command, copy button, file picker; dropping a file anywhere also works: `src/ui/dropzone.ts`, installed by the page entry, so it works on the card and in the viewer).
-2. **Viewer chrome** (`src/ui/chrome/`). Top bar: brand (back to the card), repository (link to GitHub), Names (L), Share, Authors, Fullscreen (F). Tools row: Featured (the same three repositories, by display name), GitHub token,
+2. **Viewer chrome** (`src/ui/chrome/`). Top bar: brand (back to the card), repository (link to GitHub), Authors, Fullscreen (F). Tools row: Featured (the same three repositories, by display name), GitHub token,
    Refresh history, Clear saved histories. Timeline card (date, weekday, commit N / total). Caption of the current commit. Bottom: change-size sparkline with date ticks over the scrubber
-   (hover shows the date), play/pause, counter, "By date" pacing, speed. It fades after 3.5 s of playback without input (`H` hides it entirely; a paused viewer keeps its controls).
+   (hover shows the date), play/pause, counter, NAMES (Off / Active / All, `L`), VIEW (Organic / Circuit, `M`), speed. It fades after 3.5 s of playback without input (`H` hides it entirely; a paused viewer keeps its controls).
    Mouse: left-drag pan, middle-drag orbit, wheel zoom, right-drag rotate left/right around the vertical axis, double-click reset.
    Keys: Space, Left/Right, F fullscreen, S stats, R reset camera, L names, H hide chrome.
    **Cinematic camera** (`src/render/director.ts`, see ARCHITECTURE.md *Camera*): **always on**, from the first frame, in the viewer and behind the landing card. It has no switch: no button, key or URL parameter (the old `C`, `O` and `?orbit` / `?director` were removed; old links still open and the parameters are dropped from the address bar). Any camera input (drag, wheel, touch, reset) hands the camera to you at once; after about 6 s without input it eases back in, so you can always explore. Under `prefers-reduced-motion` it still runs, at 35 % of every rate.
@@ -38,7 +38,7 @@ Parsing and serialization live in `src/web/urlstate.ts` (pure, tested in `tests/
 | `demo` | **Dev / test only**: the bundled StemDeck history, no network (the landing page has no link to it; the e2e suites use it). |
 | `fps=N` | Cap on the render loop, 10 to 240 (default 100; `0` / `off` = uncapped). The stats overlay (`S`, or `?stats`) shows it. Not written back to the shared URL. |
 
-Unknown parameters are preserved (`stats`, `seed`, `tpc`, `pacing`, `paused`, `fps`, `fixture=`, `stress=`). Dev/test parameters that select a history or mode (`fixture`, `stress`, `paused`, `stats`) skip the landing card.
+Unknown parameters are preserved (`stats`, `seed`, `tpc`, `paused`, `fps`, `fixture=`, `stress=`). Dev/test parameters that select a history or mode (`fixture`, `stress`, `paused`, `stats`) skip the landing card.
 There is a single load flow (landing card, status pill, drop zone); the first loading dialog and its `?loader` switch were removed.
 A URL with no history parameter shows the landing card; an unparseable `repo=` shows it with an explanation. The token is never part of a URL.
 

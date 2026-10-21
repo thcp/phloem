@@ -328,7 +328,6 @@ a.gm-repo:hover { text-decoration: underline; text-underline-offset: 4px; }
   .gm-lbl { display: none; }
   .gm-ibtn { padding: 0; width: 2.5rem; }
   .gm-new { width: auto; padding: 0 0.7rem; }
-  .gm-pacing { display: none; }
 }
 @media (max-width: 520px) {
   .gm-chrome { --gm-bottom-h: 6.9rem; }

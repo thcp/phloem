@@ -11,7 +11,7 @@ import { Director, createSignals, readSignals } from './render/director';
 import { Renderer } from './render/renderer';
 import { QualityGovernor, parseQuality } from './render/quality';
 import { H, HEADER } from './sim/frame';
-import { autoTicksPerCommit, type Pacing } from './sim/schedule';
+import { autoTicksPerCommit } from './sim/schedule';
 import { Chrome } from './ui/chrome/chrome';
 import { showFatal } from './ui/chrome/fatal';
 import { WebApp } from './ui/webapp';
@@ -71,7 +71,6 @@ let commits: CommitEvent[] = [];
 let sourceLabel = '';
 const seed = Number(params.get('seed')) || 1;
 const tpcParam = Number(params.get('tpc')) || undefined;
-let pacing: Pacing = params.get('pacing') === 'dates' ? 'dates' : 'even';
 let circuit = params.get('view') === 'circuit';
 camera.flat = circuit;
 renderer.setFlat(circuit);
@@ -96,11 +95,10 @@ function beginHistory(label: string, first: CommitEvent[], o: { estimate: number
   header[H.commit] = -1;
   camera.reset();
   shell.setCommits(commits);
-  shell.setPacing(pacing);
   shell.setStreaming(o.streaming, false);
   labels.setCommits(commits);
   const tpc = tpcParam ?? (o.auto ? autoTicksPerCommit(o.estimate || first.length) : undefined);
-  client.load(first, { seed, pacing, circuit, ...(tpc ? { ticksPerCommit: tpc } : {}) }, o.streaming);
+  client.load(first, { seed, circuit, ...(tpc ? { ticksPerCommit: tpc } : {}) }, o.streaming);
   if (!params.has('paused')) shell.setPlaying(true, true);
   if (import.meta.env.DEV || import.meta.env.MODE === 'e2e' || import.meta.env.VITE_EXPOSE_TEST_HOOKS === '1') {
     const hook = (window as unknown as Record<string, Record<string, unknown>>).__phloem;
@@ -141,13 +139,8 @@ const shell = new Chrome(appRoot, {
   savedCount: () => web.savedCount(),
   onClearSaved: () => web.clearSaved(),
   onCircuit: (on) => setCircuit(on),
-  onPacing: (p) => {
-    pacing = p;
-    client.setOptions({ pacing: p });
-  },
 });
 shell.setLabelMode(labels.mode);
-shell.setPacing(pacing);
 shell.setCircuit(circuit);
 if (statsOn) shell.toggleStats();
 client.onError = (m) => fatal(`Simulation error: ${m}`);
