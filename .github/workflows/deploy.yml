@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Deploys the site to Cloudflare (Workers static assets, https://phloem.thales.sh) when main changes, or by hand ("Run workflow").
+# Needs two repository secrets (Settings > Secrets and variables > Actions): CLOUDFLARE_API_TOKEN (permission: Workers Scripts Edit,
+# account scope) and CLOUDFLARE_ACCOUNT_ID. Without them the job fails at the deploy step and nothing is published. See docs/DEPLOY.md.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Build and deploy (the build also fails if the e2e test hook or a placeholder ships)
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

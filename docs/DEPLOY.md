@@ -60,7 +60,8 @@ curl -s -o /dev/null -w "%{http_code}\n" -H "Referer: https://phloem.thales.sh/"
 
   Expect the CSP, `nosniff`, `max-age=0, must-revalidate` on `/`, `max-age=3600` on `/featured/*`, and `max-age=31536000, immutable` on `/assets/*`.
 * Share preview: paste the URL into a social/Slack unfurl tester; the image is `/og.png` (1200x630).
-* Deploys are manual (`npx wrangler deploy`); there is no Git integration yet.
+* Every push to `main` deploys through `.github/workflows/deploy.yml` (tests, build, `wrangler deploy`); it can also be run by hand from the Actions tab. It needs the repository secrets `CLOUDFLARE_API_TOKEN`
+  (a token limited to **Workers Scripts: Edit** on this account) and `CLOUDFLARE_ACCOUNT_ID`. Pull requests are only built and tested by `ci.yml`. `npm run deploy` from a laptop still works.
 
 ## Notes
 
